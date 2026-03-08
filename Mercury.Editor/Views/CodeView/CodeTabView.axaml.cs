@@ -9,7 +9,7 @@ namespace Mercury.Editor.Views.CodeView;
 public partial class CodeTabView : BaseControl<CodeTabView, CodeTabViewModel> {
     public CodeTabView() {
         InitializeComponent();
-        ViewModel.LoadSizes(); // hopefully this happens before layout
         Unloaded += (_,_) => ViewModel.OnUnload();
+        Loaded += (_, _) => ViewModel.OnLoad();
     }
 }

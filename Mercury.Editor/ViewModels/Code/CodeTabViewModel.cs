@@ -29,7 +29,7 @@ public partial class CodeTabViewModel : BaseViewModel<CodeTabViewModel, CodeTabV
         DispatcherTimer.Run(SaveSizes, TimeSpan.FromMinutes(1), DispatcherPriority.Background);
     }
 
-    public void LoadSizes() {
+    private void LoadSizes() {
         ProjectFile? project = projectService.GetCurrentProject();
         if (project is null) {
             Logger.LogInformation("Tried loading preferred size with no project loaded.");
@@ -69,10 +69,16 @@ public partial class CodeTabViewModel : BaseViewModel<CodeTabViewModel, CodeTabV
         return !cts.IsCancellationRequested;
     }
 
+    public void OnLoad() {
+        LoadSizes();
+        cts = new CancellationTokenSource();
+    }
+
     public void OnUnload() {
         SaveSizes();
         cts.Cancel();
         cts.Dispose();
+        cts = null!;
     }
     
     private static bool CreateOrGet(ProjectVisualSettings settings, string name, out int size, int defaultSize) {

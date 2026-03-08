@@ -7,7 +7,7 @@ namespace Mercury.Editor.Views.ExecuteView;
 public partial class ExecuteView : BaseControl<ExecuteView, ExecuteViewModel> {
     public ExecuteView() {
         InitializeComponent();
-        ViewModel.LoadSizes();
         Unloaded += (_, _) => ViewModel.OnUnload();
+        Loaded += (_, _) => ViewModel.OnLoad();
     }
 }

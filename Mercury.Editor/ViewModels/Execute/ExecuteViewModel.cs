@@ -24,15 +24,15 @@ public partial class ExecuteViewModel : BaseViewModel<ExecuteViewModel, ExecuteV
     [ObservableProperty] private double labelsViewColumnWidth;
     [ObservableProperty] private double ramRowHeight;
     [ObservableProperty] private double ioRowHeight;
-    
-    private readonly CancellationTokenSource cts = new();
+
+    private CancellationTokenSource? cts;
 
     public ExecuteViewModel(ProjectService projectService) {
         this.projectService = projectService;
         DispatcherTimer.Run(SaveSizes, TimeSpan.FromMinutes(1), DispatcherPriority.Background);
     }
     
-    public void LoadSizes() {
+    private void LoadSizes() {
         ProjectFile? project = projectService.GetCurrentProject();
         if (project is null) {
             Logger.LogInformation("Tried loading sizes without a loaded project.");
@@ -74,13 +74,19 @@ public partial class ExecuteViewModel : BaseViewModel<ExecuteViewModel, ExecuteV
             Logger.LogInformation("Saving layout from Execute Tab");
             projectService.SaveProject();
         }
-        return !cts.IsCancellationRequested;
+        return !(cts?.IsCancellationRequested ?? true);
+    }
+
+    public void OnLoad() {
+        LoadSizes();
+        cts = new CancellationTokenSource();
     }
 
     public void OnUnload() {
         SaveSizes();
-        cts.Cancel();
-        cts.Dispose();
+        cts?.Cancel();
+        cts?.Dispose();
+        cts = null;
     }
 
     private static bool CreateOrGet(ProjectVisualSettings settings, string name, out int size, int defaultSize) {
