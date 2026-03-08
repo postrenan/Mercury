@@ -386,7 +386,7 @@ public class FullyAssociativeCache : ICache {
         }
     }
 
-    public void Write(ulong address, Span<byte> bytes) {
+    public void Write(ulong address, ReadOnlySpan<byte> bytes) {
         if (bytes.IsEmpty || bytes.Length <= 0) {
             throw new ArgumentOutOfRangeException(nameof(bytes), "Bytes span must be greater than zero.");
         }
@@ -406,7 +406,7 @@ public class FullyAssociativeCache : ICache {
         }
     }
 
-    public void Write(ulong address, Span<int> words) {
+    public void Write(ulong address, ReadOnlySpan<int> words) {
         if (words.IsEmpty || words.Length <= 0) {
             throw new ArgumentOutOfRangeException(nameof(words), "Words span must be greater than zero.");
         }

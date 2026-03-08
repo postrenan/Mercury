@@ -1,5 +1,6 @@
 ﻿using Mercury.Engine.Common;
 using Mercury.Engine.Mips.Instructions;
+using Mercury.Engine.Mips.Runtime.Events;
 
 namespace Mercury.Engine.Mips.Runtime.Simple;
 
@@ -174,10 +175,20 @@ public partial class Monocycle {
                 break;
             }
             case Syscall syscall: {
-                await InvokeSignal(new SignalExceptionEventArgs() {
-                    Signal = SignalExceptionEventArgs.SignalType.SystemCall,
-                    Instruction = (int)syscall.ConvertToInt(),
-                    ProgramCounter = Registers.Get(MipsGprRegisters.Pc)
+                await eventBus.PublishAsync(new OnSyscallEvent() {
+                    V0 = (uint)Registers.Get(MipsGprRegisters.V0),
+                    A0 = (uint)Registers.Get(MipsGprRegisters.A0),
+                    A1 = (uint)Registers.Get(MipsGprRegisters.A1),
+                    A2 = (uint)Registers.Get(MipsGprRegisters.A2),
+                    A3 = (uint)Registers.Get(MipsGprRegisters.A3),
+                    F12 = (uint)Registers.Get(MipsFpuRegisters.F12),
+                    F13 = (uint)Registers.Get(MipsFpuRegisters.F13),
+                    Instruction = syscall.ConvertToInt(),
+                    RespondV0 = v => Registers.Set(MipsGprRegisters.V0, v),
+                    RespondA0 = v => Registers.Set(MipsGprRegisters.A0, v),
+                    RespondA1 = v => Registers.Set(MipsGprRegisters.A1, v),
+                    RespondF0 = v => Registers.Set(MipsFpuRegisters.F0, v),
+                    RespondF1 = v => Registers.Set(MipsFpuRegisters.F1, v),
                 });
                 break;
             }

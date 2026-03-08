@@ -4,7 +4,7 @@
 /// Base interface for all operating systems across
 /// all architectures.
 /// </summary>
-public interface IOperatingSystem : IDisposable {
+public interface ISyscallModule : IDisposable, IModule {
     
     /// <summary>
     /// The target architecture that this operating system
@@ -26,9 +26,4 @@ public interface IOperatingSystem : IDisposable {
     /// operating systems in files.
     /// </summary>
     public string Identifier { get; }
-    
-    /// <summary>
-    /// A weak reference to the machine that this operating system is installed.
-    /// </summary>
-    public Machine Machine { get; set; }
 }

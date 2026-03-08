@@ -11,7 +11,6 @@ public interface IMemory {
     /// </summary>
     public Endianess Endianess { get; }
 
-    
     #region Single Value Methods
 
     byte ReadByte(ulong address);
@@ -32,11 +31,11 @@ public interface IMemory {
     
     void Read(ulong address, Span<byte> bytes);
 
-    void Write(ulong address, Span<byte> bytes);
+    void Write(ulong address, ReadOnlySpan<byte> bytes);
 
     void Read(ulong address, Span<int> words);
     
-    void Write(ulong address, Span<int> words);
+    void Write(ulong address, ReadOnlySpan<int> words);
 
     #endregion
 

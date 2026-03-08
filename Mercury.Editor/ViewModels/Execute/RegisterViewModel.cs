@@ -60,7 +60,7 @@ public partial class RegisterViewModel : BaseViewModel<RegisterViewModel, Regist
         vm.LoadRegisters(vm.SelectedProcessorIndex);
         vm.machine.OnRegisterChanged += vm.OnRegisterChange;
         vm.ProcessorFlags.Clear();
-        if (vm.machine.Cpu is Monocycle mono) {
+        if (vm.machine.CpuModule is Monocycle mono) {
             vm.OnFlagUpdate();
             mono.OnFlagUpdate += vm.OnFlagUpdate;
         }
@@ -120,7 +120,7 @@ public partial class RegisterViewModel : BaseViewModel<RegisterViewModel, Regist
     }
 
     private void OnFlagUpdate() {
-        Monocycle? mono = (Monocycle?)machine?.Cpu;
+        Monocycle? mono = (Monocycle?)machine?.CpuModule;
         if (mono is null) {
             return;
         }
@@ -173,7 +173,7 @@ public partial class RegisterViewModel : BaseViewModel<RegisterViewModel, Regist
     }
     
     public RegisterValues GetRegisterValues(RegisterDefinition definition) {
-        int regValue = machine!.Registers.Get(definition.Reference, definition.Reference.GetType());
+        int regValue = machine!.CpuModule.Registers.Get(definition.Reference, definition.Reference.GetType());
         Span<byte> r = stackalloc byte[4];
         _ = BitConverter.TryWriteBytes(r, regValue);
         string s = Encoding.ASCII.GetString(r);
@@ -188,7 +188,7 @@ public partial class RegisterViewModel : BaseViewModel<RegisterViewModel, Regist
             Enum? nextRegEnum = registerHelper.GetRegisterFromNumberX(definition.Number+1, definition.Reference.GetType());
             if (nextRegEnum is not null)
             {
-                int nextRegValue = machine.Registers.Get(nextRegEnum, definition.Reference.GetType());
+                int nextRegValue = machine!.CpuModule.Registers.Get(nextRegEnum, definition.Reference.GetType());
                 long combined = ((long)regValue << 32) | (uint)nextRegValue;
                 values.AsDouble = BitConverter.Int64BitsToDouble(combined);
             }

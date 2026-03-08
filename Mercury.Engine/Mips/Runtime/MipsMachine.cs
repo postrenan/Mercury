@@ -3,34 +3,24 @@ using ELFSharp.ELF.Sections;
 using ELFSharp.ELF.Segments;
 using Mercury.Engine.Common;
 using Mercury.Engine.Mips.Runtime.OS;
+using Mercury.Engine.Mips.Runtime.Simple;
 
 namespace Mercury.Engine.Mips.Runtime;
 
 
 public sealed class MipsMachine : Common.Machine {
-
-    public MipsMachine(IMipsCpu cpu, MipsOperatingSystem? os) {
-        Cpu = cpu;
-        Os = os;
-    }
-    
-    public override IMipsCpu Cpu { get;  }
-    
-    public override MipsOperatingSystem? Os { get; }
-    
-    public override RegisterCollection Registers => Cpu.Registers;
     
     public override void LoadElf(ELF<uint> elf) {
         Section<uint>? textSection = elf.GetSection(".text");
         uint textStart = textSection!.LoadAddress;
         uint textLength = textSection.Size;
-        Cpu.Registers.Set(MipsGprRegisters.Pc, (int)elf.EntryPoint);
+        CpuModule.Registers.Set(MipsGprRegisters.Pc, (int)elf.EntryPoint);
         SymbolTable<uint>? symbolTable = elf.GetSections<SymbolTable<uint>>().First();
-        Cpu.ProgramEnd = symbolTable?.Entries?.FirstOrDefault(x => x.Name == "__end")?.Value ?? textStart + textLength;
+        CpuModule.ProgramEnd = symbolTable?.Entries?.FirstOrDefault(x => x.Name == "__end")?.Value ?? textStart + textLength;
         SymbolEntry<uint>? gpSymbol = symbolTable?.Entries?.First(x => x.Name == "_gp");
         if (gpSymbol is not null)
         {
-            Cpu.Registers.Set(MipsGprRegisters.Gp, (int)gpSymbol.Value);
+            CpuModule.Registers.Set(MipsGprRegisters.Gp, (int)gpSymbol.Value);
         }
 
         // use segments to load data into memory
@@ -47,7 +37,8 @@ public sealed class MipsMachine : Common.Machine {
     
     public override void LoadProgram(Span<int> text, Span<int> data) {
         uint lastText = Load(text, TextSegmentAddress);
-        Cpu.ProgramEnd = lastText + 1;
+        (Modules.Find(x=> x is Monocycle) as Monocycle)!.ProgramEnd = lastText+1;
+        // Cpu.ProgramEnd = lastText + 1;
         _ = Load(data, DataSegmentAddress);
     }
 }

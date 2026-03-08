@@ -1,5 +1,6 @@
 ﻿using Mercury.Engine.Common;
 using Mercury.Engine.Mips.Instructions;
+using Mercury.Engine.Mips.Runtime.Events;
 
 namespace Mercury.Engine.Mips.Runtime.Simple;
 
@@ -24,9 +25,12 @@ public partial class Monocycle {
         if (instruction is Nop) {
             return;
         }
-
-        await MipsMachine.StdErr.Writer.WriteAsync(
-            $"Instruction {instruction.ToString()} recognized but not executed @ PC=0x{Registers.Get(MipsGprRegisters.Pc):X8}");
+        
+        eventBus.Publish(new UntreatedInstructionEvent {
+            Address = (ulong)Registers.Get(MipsGprRegisters.Pc),
+            Word = Convert.ToUInt32(instructionBuffer),
+            Description = instruction.ToString()
+        });
     }
     
     private Task InvokeSignal(SignalExceptionEventArgs e) {

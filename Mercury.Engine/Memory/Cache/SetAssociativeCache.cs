@@ -335,7 +335,7 @@ public class SetAssociativeCache : ICache
         throw new NotImplementedException();
     }
 
-    public void Write(ulong address, Span<byte> bytes)
+    public void Write(ulong address, ReadOnlySpan<byte> bytes)
     {
         throw new NotImplementedException();
     }
@@ -345,7 +345,7 @@ public class SetAssociativeCache : ICache
         throw new NotImplementedException();
     }
 
-    public void Write(ulong address, Span<int> words)
+    public void Write(ulong address, ReadOnlySpan<int> words)
     {
         throw new NotImplementedException();
     }

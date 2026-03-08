@@ -3,31 +3,98 @@ using System.Threading.Channels;
 
 namespace Mercury.Engine.Common;
 
+public class EventStream {
+
+    private readonly Func<ReadOnlySpan<char>, CancellationToken, ValueTask> writeFunc;
+    private readonly Func<CancellationToken, ValueTask<char>> readFunc;
+    
+    public EventStream(Func<CancellationToken,ValueTask<char>>? readFunc, Func<ReadOnlySpan<char>, CancellationToken, ValueTask>? writeFunc) {
+        this.writeFunc = writeFunc ?? ((_,_) => ValueTask.CompletedTask);
+        this.readFunc = readFunc ?? (_ => ValueTask.FromResult('\0'));
+    }
+
+    public ValueTask WriteAsync(string str, CancellationToken cancellationToken = default) {
+        return writeFunc(str.AsSpan(), cancellationToken);
+    }
+    
+    public async ValueTask<string> ReadStringAsync(int count, char[] delimeters, CancellationToken cancellationToken = default) {
+        StringBuilder sb = new();
+        for (int i = 0; i < count || count == -1; i++) {
+            char c = await readFunc(cancellationToken);
+            if (delimeters.Contains(c)) {
+                break;
+            }
+            sb.Append(c);
+        }
+        return sb.ToString();
+    }
+    
+    public async ValueTask<char> ReadCharAsync(CancellationToken cancellationToken = default) {
+        return await readFunc(cancellationToken);
+    }
+    
+    public ValueTask WriteAsync(char c, CancellationToken cancellationToken = default) {
+        Span<char> buf = stackalloc char[1];
+        buf[0] = c;
+        return writeFunc(buf, cancellationToken);
+    }
+    
+    public async ValueTask Read(Memory<char> buffer, CancellationToken cancellationToken = default) {
+        for (int i = 0; i < buffer.Length; i++) {
+            char c = await readFunc(cancellationToken);
+            buffer.Span[i] = c;
+        }
+    }
+    
+    public ValueTask Write(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) {
+        return writeFunc(buffer.Span, cancellationToken);
+    }
+}
+
+// a principio usado so no MARS
 public class ChannelStream : Stream {
 
-    private readonly Channel<char> channel;
-    private readonly Encoding encoding;
+    private readonly EventStream stream;
 
-    public ChannelStream(Channel<char> channel) {
-        this.channel = channel;
-        encoding = Encoding.GetEncoding("ASCII", EncoderFallback.ReplacementFallback,
-            DecoderFallback.ReplacementFallback);
+    public ChannelStream(EventStream stream) {
+        this.stream = stream;
     }
 
     public override void Flush() {
         // nothing
     }
 
-    public override int Read(byte[] buffer, int offset, int count) {
-        int read = Math.Min(count, channel.Reader.Count);
-        char[] buf = new char[1];
-        for (int i = 0; i < read; i++) {
-            if (!channel.Reader.TryRead(out buf[0])) {
-                return i;
-            }
-            buffer[offset + i] = encoding.GetBytes(buf)[0];
+    public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) {
+        for (int i = 0; i < count && !cancellationToken.IsCancellationRequested; i++) {
+            buffer[offset+i] = (byte)await stream.ReadCharAsync(cancellationToken);
+        }
+        return count;
+    }
+
+    public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = new()) {
+        int read = 0;
+        for (int i = 0; i < buffer.Length && !cancellationToken.IsCancellationRequested; i++) {
+            byte b = (byte)await stream.ReadCharAsync(cancellationToken);
+            buffer.Span[i] = b;
+            read++;
         }
         return read;
+    }
+
+    public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) {
+        for (int i = 0; i < count && !cancellationToken.IsCancellationRequested; i++) {
+            await stream.WriteAsync((char)buffer[offset + i], cancellationToken);
+        }
+    }
+
+    public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new()) {
+        for (int i = 0; i < buffer.Length && !cancellationToken.IsCancellationRequested; i++) {
+            await stream.WriteAsync((char)buffer.Span[i], cancellationToken);
+        }
+    }
+
+    public override int Read(byte[] buffer, int offset, int count) {
+        throw new NotSupportedException("Use Async Version");
     }
 
     public override long Seek(long offset, SeekOrigin origin) {
@@ -39,15 +106,13 @@ public class ChannelStream : Stream {
     }
 
     public override void Write(byte[] buffer, int offset, int count) {
-        for (int i = offset; i < offset + count; i++) {
-            _ = channel.Writer.TryWrite((char)buffer[i]);
-        }
+        throw  new NotSupportedException("Use Async Version");
     }
 
-    public override bool CanRead { get; } = true;
-    public override bool CanSeek { get; } = false;
-    public override bool CanWrite { get; } = true;
-    public override long Length { get; } = -1;
+    public override bool CanRead => true;
+    public override bool CanSeek => false;
+    public override bool CanWrite => true;
+    public override long Length => -1;
     public override long Position { get; set; } = -1;
 }
 

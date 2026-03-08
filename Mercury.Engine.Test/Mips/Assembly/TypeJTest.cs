@@ -23,7 +23,7 @@ public class TypeJTest {
     [DataRow(0x08100006U)]
     [TestMethod]
     public void JDisassembly(uint instructionInt) {
-        IInstruction? instruction = Disassembler.Disassemble(instructionInt);
+        IInstruction? instruction = Disassembler.Disassemble(instructionInt, new InstructionPool());
         Assert.IsNotNull(instruction);
         Assert.IsInstanceOfType<J>(instruction);
         Assert.AreEqual(instructionInt, instruction.ConvertToInt());
@@ -45,7 +45,7 @@ public class TypeJTest {
     [DataRow(0x0C100006U)]
     [TestMethod]
     public void JalDisassembly(uint instructionInt) {
-        IInstruction? instruction = Disassembler.Disassemble(instructionInt);
+        IInstruction? instruction = Disassembler.Disassemble(instructionInt, new InstructionPool());
         Assert.IsNotNull(instruction);
         Assert.IsInstanceOfType<Jal>(instruction);
         Assert.AreEqual(instructionInt, instruction.ConvertToInt());

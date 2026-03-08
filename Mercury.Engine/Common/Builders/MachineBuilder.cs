@@ -8,67 +8,41 @@ namespace Mercury.Engine.Common.Builders;
 /// The standard builder for creating a machine instance. Must be extended for specific machine types because
 /// the <see cref="Build"/> method will throw an exception if not overridden.
 /// </summary>
-public class MachineBuilder : IBuilder<Machine>
-{
+public class MachineBuilder : IBuilder<Machine> {
+    protected EventBus EventBus { get; init; }
+    protected BufferedStdinModule StdinModule { get; init; }
+    protected List<IModule> Modules { get; init; } = [];
     protected IMemory? DataMemory { get; private set; }
     protected IMemory? InstructionMemory { get; private set; }
-    protected Channel<char>? StdIn { get; private set; }
-    protected Channel<char>? StdOut { get; private set; }
-    protected Channel<char>? StdErr { get; private set; }
 
-    public MachineBuilder()
-    {
+
+    public MachineBuilder() {
         // Default constructor for user
+        EventBus = new EventBus();
+        StdinModule = new BufferedStdinModule();
+        Modules.Add(StdinModule);
     }
-    
-    protected MachineBuilder(MachineBuilder m)
-    {
+
+    protected MachineBuilder(MachineBuilder m) {
         DataMemory = m.DataMemory;
         InstructionMemory = m.InstructionMemory;
-        StdIn = m.StdIn;
-        StdOut = m.StdOut;
-        StdErr = m.StdErr;
+        EventBus = m.EventBus;
+        Modules = m.Modules;
+        StdinModule = m.StdinModule;
     }
 
-    public MachineBuilder WithMemory(IMemory memory)
-    {
+    public MachineBuilder WithMemory(IMemory memory) {
         DataMemory = memory;
         InstructionMemory = memory;
+        Modules.Add((IModule)memory);
         return this;
     }
 
-    public MachineBuilder WithInstructionMemory(IMemory memory) {
-        InstructionMemory = memory;
-        return this;
-    }
-    
-    public MachineBuilder WithDataMemory(IMemory memory) {
-        DataMemory = memory;
-        return this;
-    }
-
-    public MachineBuilder WithInMemoryStdio() {
-        StdIn = Channel.CreateUnbounded<char>();
-        StdOut = Channel.CreateUnbounded<char>();
-        StdErr = Channel.CreateUnbounded<char>();
-        return this;
-    }
-    
-    public MachineBuilder WithStdio(Channel<char>? stdin, Channel<char>? stdout, Channel<char>? stderr)
-    {
-        StdIn = stdin;
-        StdOut = stdout;
-        StdErr = stderr;
-        return this;
-    }
-
-    public MipsMachineBuilder WithMips()
-    {
+    public MipsMachineBuilder WithMips() {
         return new MipsMachineBuilder(this);
     }
 
-    public virtual Machine Build()
-    {
+    public virtual Machine Build() {
         throw new InvalidOperationException("Build method must be overridden in derived class.");
     }
 }

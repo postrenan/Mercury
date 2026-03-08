@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using Mercury.Engine.Common;
 using Mercury.Engine.Mips.Instructions;
+using Mercury.Engine.Mips.Runtime.Events;
 
 namespace Mercury.Engine.Mips.Runtime.Simple;
 
@@ -18,7 +19,7 @@ public partial class Monocycle {
                         break;
                     case TypeFInstruction.LongFixedPrecisionFormat:
                     case TypeFInstruction.WordFixedPrecisionFormat:
-                        await MipsMachine.StdErr.Writer.WriteAsync("Floating point format not supported.");
+                        eventBus.Publish(new UnsupportedFormatEvent());
                         break;
                 }
                 break;
@@ -33,7 +34,7 @@ public partial class Monocycle {
                         break;
                     case TypeFInstruction.LongFixedPrecisionFormat:
                     case TypeFInstruction.WordFixedPrecisionFormat:
-                        await MipsMachine.StdErr.Writer.WriteAsync("Floating point format not supported.");
+                        eventBus.Publish(new UnsupportedFormatEvent());
                         break;
                 }
                 break;
@@ -53,16 +54,16 @@ public partial class Monocycle {
             case C c: {
                 switch (c.Format) {
                     case TypeFInstruction.SinglePrecisionFormat:
-                        Flags[c.Cc] = await Compare(Read<float>(c.Fs), Read<float>(c.Ft), c.Cond);
+                        Flags[c.Cc] = Compare(Read<float>(c.Fs), Read<float>(c.Ft), c.Cond);
                         OnFlagUpdate?.Invoke();
                         break;
                     case TypeFInstruction.DoublePrecisionFormat:
-                        Flags[c.Cc] = await Compare(Read<double>(c.Fs), Read<double>(c.Ft), c.Cond);
+                        Flags[c.Cc] = Compare(Read<double>(c.Fs), Read<double>(c.Ft), c.Cond);
                         OnFlagUpdate?.Invoke();
                         break;
                     case TypeFInstruction.WordFixedPrecisionFormat:
                     case TypeFInstruction.LongFixedPrecisionFormat:
-                        await MipsMachine.StdErr.Writer.WriteAsync("Floating point format not supported.");
+                        eventBus.Publish(new UnsupportedFormatEvent());
                         break;
                 }
                 break;
@@ -81,11 +82,11 @@ public partial class Monocycle {
                         Write<double>(cvtd.Fd, Read<float>(cvtd.Fs));
                         break;
                     case TypeFInstruction.DoublePrecisionFormat:
-                        await InvalidOp();
+                        InvalidOp();
                         break;
                     case TypeFInstruction.WordFixedPrecisionFormat:
                     case TypeFInstruction.LongFixedPrecisionFormat:
-                        await MipsMachine.StdErr.Writer.WriteAsync("Floating point format not supported.");
+                        eventBus.Publish(new UnsupportedFormatEvent());
                         break;
                 }
                 break;
@@ -93,14 +94,14 @@ public partial class Monocycle {
             case CvtS cvts: {
                 switch (cvts.Format) {
                     case TypeFInstruction.SinglePrecisionFormat:
-                        await InvalidOp();
+                        InvalidOp();
                         break;
                     case TypeFInstruction.DoublePrecisionFormat:
                         Write(cvts.Fd, (float)Read<double>(cvts.Fs));
                         break;
                     case TypeFInstruction.WordFixedPrecisionFormat:
                     case TypeFInstruction.LongFixedPrecisionFormat:
-                        await MipsMachine.StdErr.Writer.WriteAsync("Floating point format not supported.");
+                        eventBus.Publish(new UnsupportedFormatEvent());
                         break;
                 }
                 break;
@@ -115,7 +116,7 @@ public partial class Monocycle {
                         break;
                     case TypeFInstruction.WordFixedPrecisionFormat:
                     case TypeFInstruction.LongFixedPrecisionFormat:
-                        await MipsMachine.StdErr.Writer.WriteAsync("Floating point format not supported.");
+                        eventBus.Publish(new UnsupportedFormatEvent());
                         break;
                 }
                 break;
@@ -134,7 +135,7 @@ public partial class Monocycle {
                         break;
                     case TypeFInstruction.WordFixedPrecisionFormat:
                     case TypeFInstruction.LongFixedPrecisionFormat:
-                        await MipsMachine.StdErr.Writer.WriteAsync("Floating point format not supported.");
+                        eventBus.Publish(new UnsupportedFormatEvent());
                         break;
                 }
                 break;
@@ -153,7 +154,7 @@ public partial class Monocycle {
                         break;
                     case TypeFInstruction.WordFixedPrecisionFormat:
                     case TypeFInstruction.LongFixedPrecisionFormat:
-                        await MipsMachine.StdErr.Writer.WriteAsync("Floating point format not supported.");
+                        eventBus.Publish(new UnsupportedFormatEvent());
                         break;
                 }
                 break;
@@ -185,7 +186,7 @@ public partial class Monocycle {
                         break;
                     case TypeFInstruction.WordFixedPrecisionFormat:
                     case TypeFInstruction.LongFixedPrecisionFormat:
-                        await MipsMachine.StdErr.Writer.WriteAsync("Floating point format not supported.");
+                        eventBus.Publish(new UnsupportedFormatEvent());
                         break;
                 }
                 break;
@@ -200,7 +201,7 @@ public partial class Monocycle {
                         break;
                     case TypeFInstruction.WordFixedPrecisionFormat:
                     case TypeFInstruction.LongFixedPrecisionFormat:
-                        await MipsMachine.StdErr.Writer.WriteAsync("Floating point format not supported.");
+                        eventBus.Publish(new UnsupportedFormatEvent());
                         break;
                 }
                 break;
@@ -211,11 +212,10 @@ public partial class Monocycle {
 
         return true;
        
-        Task InvalidOp() {
-            return InvokeSignal(new SignalExceptionEventArgs {
-                Instruction = MipsMachine.Memory.ReadWord((ulong)Registers.Get(MipsGprRegisters.Pc)),
-                ProgramCounter = Registers.Get(MipsGprRegisters.Pc),
-                Signal = SignalExceptionEventArgs.SignalType.InvalidOperation
+        void InvalidOp() {
+            eventBus.Publish(new InvalidOperationEvent {
+                Address = (ulong)Registers.Get(MipsGprRegisters.Pc),
+                Word = (uint)BytesToInt32(instructionBuffer.Span)
             });
         }
         
@@ -278,7 +278,7 @@ public partial class Monocycle {
             Write(fd, r);
         }
         
-        async ValueTask<bool> Compare<T>(T a, T b, byte cond) where T : IEquatable<T>, IFloatingPoint<T> {
+        bool Compare<T>(T a, T b, byte cond) where T : IEquatable<T>, IFloatingPoint<T> {
             switch (cond) {
                 case 0:
                     return false; // false
@@ -307,7 +307,7 @@ public partial class Monocycle {
                 case 8: {
                     if (T.IsNaN(a) || T.IsNaN(b))
                     {
-                        await InvalidOp();
+                        InvalidOp();
                     }
                     return false;
                 }
@@ -319,7 +319,7 @@ public partial class Monocycle {
                 case 10: {
                     if (T.IsNaN(a) || T.IsNaN(b))
                     {
-                        await InvalidOp();
+                        InvalidOp();
                     }
 
                     return a == b && !T.IsNaN(a) && !T.IsNaN(b);
@@ -328,7 +328,7 @@ public partial class Monocycle {
                 case 11: {
                     if (T.IsNaN(a) || T.IsNaN(b))
                     {
-                        await InvalidOp();
+                        InvalidOp();
                     }
                     return !(a > b || a < b) ||
                            T.IsNaN(a) || T.IsNaN(b);
@@ -337,7 +337,7 @@ public partial class Monocycle {
                 case 12: {
                     if (T.IsNaN(a) || T.IsNaN(b))
                     {
-                        await InvalidOp();
+                        InvalidOp();
                     }
 
                     return a < b && !T.IsNaN(a) && !T.IsNaN(b);
@@ -346,7 +346,7 @@ public partial class Monocycle {
                 case 13: {
                     if (T.IsNaN(a) || T.IsNaN(b))
                     {
-                        await InvalidOp();
+                        InvalidOp();
                     }
                     return !(a >= b) ||
                            T.IsNaN(a) || T.IsNaN(b);
@@ -355,7 +355,7 @@ public partial class Monocycle {
                 case 14: {
                     if (T.IsNaN(a) || T.IsNaN(b))
                     {
-                        await InvalidOp();
+                        InvalidOp();
                     }
                     return a <= b && !T.IsNaN(a) && !T.IsNaN(b);
                 }
@@ -363,13 +363,13 @@ public partial class Monocycle {
                 case 15: {
                     if (T.IsNaN(a) || T.IsNaN(b))
                     {
-                        await InvalidOp();
+                        InvalidOp();
                     }
                     return !(a > b) ||
                            T.IsNaN(a) || T.IsNaN(b);
                 }
                 default:
-                    await MipsMachine.StdErr.Writer.WriteAsync("Invalid condition code: " + cond);
+                    eventBus.Publish(new UnsupportedFormatEvent());
                     return false;
             }
         }

@@ -1,7 +1,8 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -9,6 +10,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Mercury.Editor.Models.Messages;
 using Mercury.Editor.Views.ExecuteView;
 using Mercury.Engine.Common;
+using Mercury.Engine.Common.Events;
 
 namespace Mercury.Editor.ViewModels.Execute;
 
@@ -18,7 +20,7 @@ public partial class OutputViewModel : BaseViewModel<OutputViewModel, OutputView
 
     // manually implemented text property
     private string? textCached;
-    public string Text =>textCached ??= sb.ToString();
+    public string Text => textCached ??= sb.ToString();
 
     private void TriggerTextUpdate() {
         textCached = null;
@@ -28,11 +30,9 @@ public partial class OutputViewModel : BaseViewModel<OutputViewModel, OutputView
     }
 
     private readonly StringBuilder sb = new();
-    private ChannelReader<char>? srOut;
-    private ChannelReader<char>? srErr;
-    private ChannelWriter<char>? swIn;
-    private CancellationTokenSource? cts;
-    private const int PoolingIntervalMs = 100;
+    private EventBus? eventBus;
+    private readonly List<IDisposable> subscribers = [];
+    private BufferedStdinModule? stdinModule;
 
     public OutputViewModel() {
         WeakReferenceMessenger.Default.Register<ProgramLoadMessage>(this, OnProgramLoaded);
@@ -41,72 +41,37 @@ public partial class OutputViewModel : BaseViewModel<OutputViewModel, OutputView
     private static void OnProgramLoaded(object receiver, ProgramLoadMessage msg) {
         OutputViewModel vm = (OutputViewModel)receiver;
         // dispose old objects
-        vm.cts?.Cancel();
-        vm.cts = new CancellationTokenSource();
-        vm.srErr = null;
-        vm.srOut = null;
-        vm.swIn = null;
         vm.sb.Clear();
 
-        // create new objects
-        vm.swIn = msg.MipsMachine.StdIn.Writer;
-        vm.srOut = msg.MipsMachine.StdOut.Reader;
-        vm.srErr = msg.MipsMachine.StdErr.Reader;
-
-        _ = vm.ReadStdOut(vm.cts.Token);
-        _ = vm.ReadStdErr(vm.cts.Token);
-
+        foreach (IDisposable sub in vm.subscribers) {
+            sub.Dispose();
+        }
+        vm.subscribers.Clear();
+        vm.eventBus = msg.MipsMachine.EventBus;
+        vm.subscribers.Add(vm.eventBus.Subscribe<StdOutWriteEvent>(vm.HandleStdOut));
+        vm.subscribers.Add(vm.eventBus.Subscribe<StdErrWriteEvent>(vm.HandleStdErr));
+        vm.stdinModule = msg.MipsMachine.StdIn;
+        
         vm.TriggerTextUpdate();
     }
+
+    private void HandleStdOut(StdOutWriteEvent e) {
+        sb.Append(e.Data);
+        TriggerTextUpdate();
+    }
+
+    private void HandleStdErr(StdErrWriteEvent e) {
+        sb.Append(e.Data);
+        TriggerTextUpdate();
+    }
     
-    private async Task ReadStdOut(CancellationToken token) {
-        StringBuilder outSb = new();
-        while (!token.IsCancellationRequested && srOut is not null) {
-            int available = srOut.Count;
-            if(available == 0) {
-                await Task.Delay(PoolingIntervalMs, token);
-                continue;
-            }
-
-            for (int i = 0; i < available && !token.IsCancellationRequested; i++) {
-                outSb.Append(await srOut.ReadAsync(token));
-            }
-            lock (sb) {
-                sb.Append(outSb);
-            }
-            outSb.Clear();
-            TriggerTextUpdate();
-        }
-    }
-
-    private async Task ReadStdErr(CancellationToken token) {
-        StringBuilder errSb = new();
-        while (!token.IsCancellationRequested && srErr is not null) {
-            int available = srErr.Count;
-            if(available == 0) {
-                await Task.Delay(PoolingIntervalMs, token);
-                continue;
-            }
-
-            for (int i = 0; i < available && !token.IsCancellationRequested; i++) {
-                errSb.Append(await srErr.ReadAsync(token));
-            }
-            lock (sb) {
-                sb.Append(errSb);
-            }
-            errSb.Clear();
-            TriggerTextUpdate();
-        }
-    }
-
     [RelayCommand(CanExecute = nameof(CanSend))]
     private async Task Send() {
-        if (swIn is null) {
+        if (stdinModule is null) {
             return;
         }
-
         sb.AppendLine(InputText);
-        await swIn!.WriteAsync(InputText + '\n');
+        await stdinModule.Writer.WriteAsync(InputText + '\n');
         InputText = string.Empty;
         TriggerTextUpdate();
     }
@@ -118,7 +83,7 @@ public partial class OutputViewModel : BaseViewModel<OutputViewModel, OutputView
     }
 
     private bool CanSend() {
-        return !string.IsNullOrEmpty(InputText) && swIn is not null;
+        return !string.IsNullOrEmpty(InputText) && stdinModule is not null;
     }
 
     private bool CanClear() {

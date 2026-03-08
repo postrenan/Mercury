@@ -45,7 +45,7 @@ public static class OperatingSystemManager {
         // Registrar novos sistemas operacionais abaixo
     }
 
-    private static void Register<T>() where T : IOperatingSystem, new() {
+    private static void Register<T>() where T : ISyscallModule, new() {
         T os = new();
         var osType = new OperatingSystemType {
             OsType = typeof(T),

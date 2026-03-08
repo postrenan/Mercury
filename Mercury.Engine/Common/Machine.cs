@@ -1,7 +1,9 @@
 ﻿using System.Threading.Channels;
 using ELFSharp.ELF;
+using Mercury.Engine.Common.Events;
 using Mercury.Engine.Memory;
 using Mercury.Engine.Mips.Runtime;
+using Mercury.Engine.Mips.Runtime.Simple;
 
 namespace Mercury.Engine.Common;
 
@@ -9,8 +11,12 @@ namespace Mercury.Engine.Common;
 /// A class that holds all the parts that the simulated computer needs
 /// to function.
 /// </summary>
-public abstract class Machine : IAsyncClockable, IDisposable
-{   
+public abstract class Machine : IAsyncClockable, IDisposable {
+
+    public required EventBus EventBus { get; set; } = new();
+
+    public List<IModule> Modules { get; set; } = [];
+    
     /// <summary>
     /// A reference to the memory object that holds all data
     /// that the program operates on. It may be the same object
@@ -27,32 +33,45 @@ public abstract class Machine : IAsyncClockable, IDisposable
     /// <summary>
     /// The object that executes code.
     /// </summary>
-    public abstract ICpu Cpu { get; }
-
-    /// <summary>
-    /// A link to the RegisterBank present on the <see cref="Cpu"/>
-    /// </summary>
-    public virtual RegisterCollection Registers => Cpu.Registers;
+    public ICpuModule CpuModule {
+        get {
+            field ??= (ICpuModule?)Modules.Find(x => x is ICpuModule);
+            return field ?? throw new NullReferenceException("No module found implementing ICpuModule");
+        }
+    }
 
     /// <summary>
     /// The Operating System that answers syscalls of this machine.
     /// </summary>
-    public abstract IOperatingSystem? Os { get; }
+    public ISyscallModule? SyscallModule {
+        get {
+            field ??= (ISyscallModule?)Modules.Find(x => x is ISyscallModule);
+            return field;
+        }
+    }
 
-    /// <summary>
-    /// The standard input that gives data to the program being run.
-    /// </summary>
-    public required Channel<char> StdIn { get; init; }
+    public BufferedStdinModule StdIn {
+        get {
+            field ??= (BufferedStdinModule?)Modules.Find(x => x is BufferedStdinModule);
+            return field ?? throw new NullReferenceException("No BufferedStdinModule found");
+        }
+    }
     
-    /// <summary>
-    /// The standard output that programs can write to.
-    /// </summary>
-    public required Channel<char> StdOut { get; init; }
-    
-    /// <summary>
-    /// The standard channels where errors from the program and machine are written to.
-    /// </summary>
-    public required Channel<char> StdErr { get; init; }
+
+    // /// <summary>
+    // /// The standard input that gives data to the program being run.
+    // /// </summary>
+    // public required Channel<char> StdIn { get; init; }
+    //
+    // /// <summary>
+    // /// The standard output that programs can write to.
+    // /// </summary>
+    // public required Channel<char> StdOut { get; init; }
+    //
+    // /// <summary>
+    // /// The standard channels where errors from the program and machine are written to.
+    // /// </summary>
+    // public required Channel<char> StdErr { get; init; }
 
     /// <summary>
     /// The current architecture of this machine.
@@ -61,28 +80,13 @@ public abstract class Machine : IAsyncClockable, IDisposable
 
     public bool IsDisposed { get; private set; }
     
-    public ValueTask ClockAsync() {
-        ValueTask vt = Cpu.ClockAsync();
-        if (!vt.IsCompletedSuccessfully) {
-            return Awaited(this, vt);
-        }
-
-        CompleteFast(this);
-        return default;
-
-        static async ValueTask Awaited(Machine self, ValueTask vt) {
-            await vt;
-            CompleteFast(self);
-        }
-
-        static void CompleteFast(Machine self) {
-            // invoke even with 0 dirty to unselect last changed register on ui
-            ValueTuple<Type, int>[] dirty = self.Registers.GetDirty(out int count);
-            self.OnRegisterChanged?.Invoke(dirty,count);
-        }
+    public async ValueTask ClockAsync() {
+        await EventBus.PublishAsync(new ClockEvent());
+        ValueTuple<Type, int>[] dirty = CpuModule.Registers.GetDirty(out int count);
+        OnRegisterChanged?.Invoke(dirty,count);
     }
-    
-    public bool IsClockingFinished() => Cpu.IsClockingFinished();
+
+    public bool IsClockingFinished() => ((Monocycle)Modules.Find(x => x is Monocycle)!).IsClockingFinished();
     
     /// <summary>
     /// Raised every cycle with a list of the changed registers. Contains
@@ -140,7 +144,7 @@ public abstract class Machine : IAsyncClockable, IDisposable
         // dispose objects
         if(DataMemory is IDisposable dispDMem) dispDMem.Dispose();
         if(Memory is IDisposable dispIMem) dispIMem.Dispose();
-        Os?.Dispose();
+        SyscallModule?.Dispose();
     }
 
     /// <summary>

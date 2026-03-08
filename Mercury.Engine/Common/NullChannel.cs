@@ -15,7 +15,7 @@ public class NullChannel<T> : Channel<T> {
             return false;
         }
 
-        public override ValueTask<bool> WaitToReadAsync(CancellationToken cancellationToken = new()) {
+        public override ValueTask<bool> WaitToReadAsync(CancellationToken cancellationToken = default) {
             return ValueTask.FromResult(false);
         }
 
@@ -29,7 +29,7 @@ public class NullChannel<T> : Channel<T> {
             return false;
         }
 
-        public override ValueTask<bool> WaitToWriteAsync(CancellationToken cancellationToken = new CancellationToken()) {
+        public override ValueTask<bool> WaitToWriteAsync(CancellationToken cancellationToken = default) {
             return ValueTask.FromResult(false);
         }
     }

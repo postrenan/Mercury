@@ -29,7 +29,7 @@ public class TypeRTest {
     [DataRow(0x03BAB820U)]
     [TestMethod(DisplayName = "Test assembling")]
     public void AddDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Add>(disassembled);
     }
@@ -54,7 +54,7 @@ public class TypeRTest {
     [DataRow(0x03BAB821U)]
     [TestMethod(DisplayName = "Test assembling")]
     public void AdduDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Addu>(disassembled);
     }
@@ -79,7 +79,7 @@ public class TypeRTest {
     [DataRow(0x03BAB82AU)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void SltDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Slt>(disassembled);
     }
@@ -104,7 +104,7 @@ public class TypeRTest {
     [DataRow(0x03BAB82BU)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void SltuDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Sltu>(disassembled);
     }
@@ -129,7 +129,7 @@ public class TypeRTest {
     [DataRow(0x03BAB822U)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void SubDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Sub>(disassembled);
     }
@@ -154,7 +154,7 @@ public class TypeRTest {
     [DataRow(0x03BAB823U)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void SubuDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Subu>(disassembled);
     }
@@ -179,7 +179,7 @@ public class TypeRTest {
     [DataRow((uint)0x03BAB824)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void AndDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<And>(disassembled);
     }
@@ -204,7 +204,7 @@ public class TypeRTest {
     [DataRow((uint)0x03BAB827)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void NorDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Nor>(disassembled);
     }
@@ -231,7 +231,7 @@ public class TypeRTest {
     [DataRow(0x0341B825U)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void OrDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Or>(disassembled);
     }
@@ -256,7 +256,7 @@ public class TypeRTest {
     [DataRow(0x03BAB826U)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void XorDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Xor>(disassembled);
     }
@@ -281,7 +281,7 @@ public class TypeRTest {
     [DataRow(0x001DB940U)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void SllDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Sll>(disassembled);
     }
@@ -306,7 +306,7 @@ public class TypeRTest {
     [DataRow(0x035DB804U)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void SllvDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Sllv>(disassembled);
     }
@@ -331,7 +331,7 @@ public class TypeRTest {
     [DataRow(0x001DB943U)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void SraDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Sra>(disassembled);
     }
@@ -356,7 +356,7 @@ public class TypeRTest {
     [DataRow(0x035DB807U)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void SravDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Srav>(disassembled);
     }
@@ -381,7 +381,7 @@ public class TypeRTest {
     [DataRow((uint)0x001DB942)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void SrlDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Srl>(disassembled);
     }
@@ -406,7 +406,7 @@ public class TypeRTest {
     [DataRow(0x035DB806U)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void SrlvDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Srlv>(disassembled);
     }
@@ -430,7 +430,7 @@ public class TypeRTest {
     [DataRow((uint)0x02FA001A)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void DivDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Div>(disassembled);
     }
@@ -454,7 +454,7 @@ public class TypeRTest {
     [DataRow(0x02FA001BU)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void DivuDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Divu>(disassembled);
     }
@@ -478,7 +478,7 @@ public class TypeRTest {
     [DataRow(0x02FA0018U)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void MultDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Mult>(disassembled);
     }
@@ -502,7 +502,7 @@ public class TypeRTest {
     [DataRow(0x02FA0019U)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void MultuDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Multu>(disassembled);
     }
@@ -525,7 +525,7 @@ public class TypeRTest {
     [DataRow(0x0000A010U)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void MfhiDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Mfhi>(disassembled);
     }
@@ -548,7 +548,7 @@ public class TypeRTest {
     [DataRow(0x0000A012U)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void MfloDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Mflo>(disassembled);
     }
@@ -571,7 +571,7 @@ public class TypeRTest {
     [DataRow(0x02800011U)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void MthiDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Mthi>(disassembled);
     }
@@ -594,7 +594,7 @@ public class TypeRTest {
     [DataRow(0x02800013U)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void MtloDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Mtlo>(disassembled);
     }
@@ -618,7 +618,7 @@ public class TypeRTest {
     [DataRow(0x7000E821U)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void CloDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Clo>(disassembled);
     }
@@ -642,7 +642,7 @@ public class TypeRTest {
     [DataRow(0x7000E820U)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void ClzDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Clz>(disassembled);
     }
@@ -689,7 +689,7 @@ public class TypeRTest {
     [DataRow((uint)0x00809809)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void JalrDisassemblySingle(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Jalr>(disassembled);
     }
@@ -699,7 +699,7 @@ public class TypeRTest {
     [DataRow(0b000000_00000000000000000010_001100U)]
     [TestMethod(DisplayName = "Test disassembling")]
     public void SyscallDisassembly(uint instruction) {
-        IInstruction? disassembled = Disassembler.Disassemble(instruction);
+        IInstruction? disassembled = Disassembler.Disassemble(instruction, new InstructionPool());
         Assert.IsNotNull(disassembled);
         Assert.IsInstanceOfType<Syscall>(disassembled);
     }

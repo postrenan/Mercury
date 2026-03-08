@@ -1,10 +1,13 @@
 ﻿using Mercury.Engine.Mips.Instructions;
 using Mercury.Engine.Common;
+using Mercury.Engine.Mips.Runtime.Events;
 
 namespace Mercury.Engine.Mips.Runtime.Simple;
 
 public partial class Monocycle {
 
+    private Memory<byte> memoryBuffer = new byte[4];
+    
     private async ValueTask<bool> ExecuteTypeI(IInstruction instruction) {
         switch (instruction) {
             case Addi addi: {
@@ -96,62 +99,46 @@ public partial class Monocycle {
             }
             case Lb lb: {
                 ulong address = (ulong)(Registers.Get<MipsGprRegisters>(lb.Base) + lb.Offset);
-                Registers.Set<MipsGprRegisters>(lb.Rt, (sbyte)MipsMachine.DataMemory.ReadByte(address));
-                MipsMachine.OnMemoryAccess(new MemoryAccessEventArgs {
-                    Address = (ulong)(Registers.Get<MipsGprRegisters>(lb.Base) + lb.Offset),
-                    Size = 1,
-                    Mode = MemoryAccessMode.Read,
-                    Source = MemoryAccessSource.Instruction
-                });
+                ReadMemory(address, memoryBuffer[..1]);
+                Registers.Set<MipsGprRegisters>(lb.Rt, (sbyte)memoryBuffer.Span[0]);
                 break;
             }
             case Lbu lbu: {
                 ulong address = (ulong)(Registers.Get<MipsGprRegisters>(lbu.Base) + lbu.Offset);
-                Registers.Set<MipsGprRegisters>(lbu.Rt, MipsMachine.DataMemory.ReadByte(address));
-                MipsMachine.OnMemoryAccess(new MemoryAccessEventArgs() {
-                    Address = address,
-                    Size = 1,
-                    Mode = MemoryAccessMode.Read,
-                    Source = MemoryAccessSource.Instruction
-                });
+                ReadMemory(address, memoryBuffer[..1]);
+                Registers.Set<MipsGprRegisters>(lbu.Rt, memoryBuffer.Span[0]);
                 break;
             }
             case Lh lh: {
-                int address = Registers.Get<MipsGprRegisters>(lh.Base) + lh.Offset;
+                ulong address = (ulong)(Registers.Get<MipsGprRegisters>(lh.Base) + lh.Offset);
                 if (address % 2 != 0) {
-                    await InvokeSignal(new SignalExceptionEventArgs() {
-                        Signal = SignalExceptionEventArgs.SignalType.AddressError,
-                        Instruction = (int)lh.ConvertToInt(),
-                        ProgramCounter = Registers.Get(MipsGprRegisters.Pc)
+                    eventBus.Publish(new UnalignedMemoryAccessEvent {
+                        InstructionWord = lh.ConvertToInt(),
+                        AccessSize = 2,
+                        InstructionAddress = (ulong)Registers.Get(MipsGprRegisters.Pc),
+                        MemoryAddress = address
                     });
                     break;
                 }
-                Registers.Set<MipsGprRegisters>(lh.Rt, (short)(MipsMachine.DataMemory.ReadWord((ulong)address) & 0xFFFF));
-                MipsMachine.OnMemoryAccess(new MemoryAccessEventArgs() {
-                    Address = (ulong)address,
-                    Size = 2,
-                    Mode = MemoryAccessMode.Read,
-                    Source = MemoryAccessSource.Instruction
-                });
+                ReadMemory(address, memoryBuffer[..2]);
+                short value = BytesToInt16(memoryBuffer.Span);
+                Registers.Set<MipsGprRegisters>(lh.Rt, value);
                 break;
             }
             case Lhu lhu: {
-                int address = Registers.Get<MipsGprRegisters>(lhu.Base) + lhu.Offset;
+                ulong address = (ulong)(Registers.Get<MipsGprRegisters>(lhu.Base) + lhu.Offset);
                 if (address % 2 != 0) {
-                    await InvokeSignal(new SignalExceptionEventArgs() {
-                        Signal = SignalExceptionEventArgs.SignalType.AddressError,
-                        Instruction = (int)lhu.ConvertToInt(),
-                        ProgramCounter = Registers.Get(MipsGprRegisters.Pc)
+                    eventBus.Publish(new UnalignedMemoryAccessEvent {
+                        InstructionWord = lhu.ConvertToInt(),
+                        AccessSize = 2,
+                        InstructionAddress = (ulong)Registers.Get(MipsGprRegisters.Pc),
+                        MemoryAddress = address
                     });
                     break;
                 }
-                Registers.Set<MipsGprRegisters>(lhu.Rt, (ushort)(MipsMachine.DataMemory.ReadWord((ulong)address) & 0xFFFF));
-                MipsMachine.OnMemoryAccess(new MemoryAccessEventArgs() {
-                    Address = (ulong)address,
-                    Size = 2,
-                    Mode = MemoryAccessMode.Read,
-                    Source = MemoryAccessSource.Instruction
-                });
+                ReadMemory(address, memoryBuffer[..2]);
+                ushort value = (ushort)BytesToInt16(memoryBuffer.Span[..2]);
+                Registers.Set<MipsGprRegisters>(lhu.Rt, value);
                 break;
             }
             case Lui lui: {
@@ -159,72 +146,59 @@ public partial class Monocycle {
                 break;
             }
             case Lw lw: {
-                int address = Registers.Get<MipsGprRegisters>(lw.Base) + lw.Offset;
+                ulong address = (ulong)(Registers.Get<MipsGprRegisters>(lw.Base) + lw.Offset);
                 if((address & 0b11) != 0) {
-                    await InvokeSignal(new SignalExceptionEventArgs() {
-                        Signal = SignalExceptionEventArgs.SignalType.AddressError,
-                        Instruction = (int)lw.ConvertToInt(),
-                        ProgramCounter = Registers.Get(MipsGprRegisters.Pc)
+                    eventBus.Publish(new UnalignedMemoryAccessEvent {
+                        InstructionWord =  lw.ConvertToInt(),
+                        AccessSize = 4,
+                        InstructionAddress = (ulong)Registers.Get(MipsGprRegisters.Pc),
+                        MemoryAddress = address
                     });
                     break;
                 }
-                Registers.Set<MipsGprRegisters>(lw.Rt, MipsMachine.DataMemory.ReadWord((ulong)address));
-                MipsMachine.OnMemoryAccess(new MemoryAccessEventArgs() {
-                    Address = (ulong)address,
-                    Size = 4,
-                    Mode = MemoryAccessMode.Read,
-                    Source = MemoryAccessSource.Instruction
-                });
+                ReadMemory(address, memoryBuffer);
+                int value = BytesToInt32(memoryBuffer.Span);
+                Registers.Set<MipsGprRegisters>(lw.Rt, value);
                 break;
             }
             case Sb sb: {
-                MipsMachine.DataMemory.WriteByte((ulong)(Registers.Get<MipsGprRegisters>(sb.Base) + sb.Offset), (byte)Registers.Get<MipsGprRegisters>(sb.Rt));
-                MipsMachine.OnMemoryAccess(new MemoryAccessEventArgs() {
-                    Address = (ulong)(Registers.Get<MipsGprRegisters>(sb.Base) + sb.Offset),
-                    Size = 1,
-                    Mode = MemoryAccessMode.Write,
-                    Source = MemoryAccessSource.Instruction
-                });
+                ulong address = (ulong)(Registers.Get<MipsGprRegisters>(sb.Base) + sb.Offset);
+                byte value = (byte)(Registers.Get<MipsGprRegisters>(sb.Rt) & 0xFF);
+                memoryBuffer.Span[0] = value;
+                WriteMemory(address, memoryBuffer[..1]);
                 break;
             }
             case Sh sh: {
-                int address = Registers.Get<MipsGprRegisters>(sh.Base) + sh.Offset;
+                ulong address = (ulong)(Registers.Get<MipsGprRegisters>(sh.Base) + sh.Offset);
                 if((address & 0b1) != 0) {
-                    await InvokeSignal(new SignalExceptionEventArgs() {
-                        Signal = SignalExceptionEventArgs.SignalType.AddressError,
-                        Instruction = (int)sh.ConvertToInt(),
-                        ProgramCounter = Registers.Get(MipsGprRegisters.Pc)
+                    eventBus.Publish(new UnalignedMemoryAccessEvent {
+                        InstructionWord = sh.ConvertToInt(),
+                        AccessSize = 2,
+                        InstructionAddress = (ulong)Registers.Get(MipsGprRegisters.Pc),
+                        MemoryAddress = address
                     });
                     break;
                 }
                 // write two bytes
-                MipsMachine.DataMemory.WriteByte((ulong)address, (byte)(Registers.Get<MipsGprRegisters>(sh.Rt) >> 8));
-                MipsMachine.DataMemory.WriteByte((ulong)(address + 1), (byte)(Registers.Get<MipsGprRegisters>(sh.Rt) & 0xFF));
-                MipsMachine.OnMemoryAccess(new MemoryAccessEventArgs() {
-                    Address = (ulong)address,
-                    Size = 2,
-                    Mode = MemoryAccessMode.Write,
-                    Source = MemoryAccessSource.Instruction
-                });
+                int value = Registers.Get<MipsGprRegisters>(sh.Rt);
+                Int16ToBytes((short)value, memoryBuffer.Span[..2]);
+                WriteMemory(address, memoryBuffer[..2]);
                 break;
             }
             case Sw sw: {
-                int address = Registers.Get<MipsGprRegisters>(sw.Base) + sw.Offset;
+                ulong address = (ulong)(Registers.Get<MipsGprRegisters>(sw.Base) + sw.Offset);
                 if ((address & 0b11) != 0) {
-                    await InvokeSignal(new SignalExceptionEventArgs() {
-                        Signal = SignalExceptionEventArgs.SignalType.AddressError,
-                        Instruction = (int)sw.ConvertToInt(),
-                        ProgramCounter = Registers.Get(MipsGprRegisters.Pc)
+                    eventBus.Publish(new UnalignedMemoryAccessEvent {
+                        InstructionWord = sw.ConvertToInt(),
+                        AccessSize = 2,
+                        InstructionAddress = (ulong)Registers.Get(MipsGprRegisters.Pc),
+                        MemoryAddress = address
                     });
                     break;
                 }
-                MipsMachine.DataMemory.WriteWord((ulong)address, Registers.Get<MipsGprRegisters>(sw.Rt));
-                MipsMachine.OnMemoryAccess(new MemoryAccessEventArgs() {
-                    Address = (ulong)address,
-                    Size = 4,
-                    Mode = MemoryAccessMode.Write,
-                    Source = MemoryAccessSource.Instruction
-                });
+                int value = Registers.Get<MipsGprRegisters>(sw.Rt);
+                Int32ToBytes(value, memoryBuffer.Span);
+                WriteMemory(address, memoryBuffer);
                 break;
             }
             case Teqi teqi: {
@@ -239,22 +213,19 @@ public partial class Monocycle {
             }
             case Lwcz lwcz: {
                 ulong address = (ulong)(Registers.Get<MipsGprRegisters>(lwcz.Base) + lwcz.Offset);
-                int value = MipsMachine.DataMemory.ReadWord(address);
+                ReadMemory(address, memoryBuffer);
+                int value = BytesToInt32(memoryBuffer.Span);
                 if (lwcz.Coprocessor == 0) { // syscontrol
                     Registers.Set<MipsSpecialRegisters>(lwcz.Ft, value);
                 }else if (lwcz.Coprocessor == 1) { // fpu
                     Registers.Set<MipsFpuRegisters>(lwcz.Ft, value);
                 }else {
-                    await MipsMachine.StdErr.Writer.WriteAsync($"Coprocessor {lwcz.Coprocessor} not supported. Instruction: {lwcz} @ PC={Registers.Get(MipsGprRegisters.Pc):X8}\n");
-                    break;
+                    eventBus.Publish(new UnsupportedCoprocessorEvent() {
+                        Address = (uint)Registers.Get(MipsGprRegisters.Pc),
+                        Instruction = lwcz.ConvertToInt(),
+                        Value = lwcz.Coprocessor
+                    });
                 }
-                MipsMachine.OnMemoryAccess(new MemoryAccessEventArgs()
-                {
-                    Address = address,
-                    Mode =MemoryAccessMode.Read,
-                    Size = 4,
-                    Source = MemoryAccessSource.Instruction
-                });
                 break;
             }
             case Swcz swcz: {
@@ -265,17 +236,15 @@ public partial class Monocycle {
                 }else if (swcz.Coprocessor == 1) { // fpu
                     value = Registers.Get<MipsFpuRegisters>(swcz.Rt);
                 }else {
-                    await MipsMachine.StdErr.Writer.WriteAsync($"Coprocessor {swcz.Coprocessor} not supported. Instruction: {swcz} @ PC={Registers.Get(MipsGprRegisters.Pc):X8}\n");
+                    eventBus.Publish(new UnsupportedCoprocessorEvent() {
+                        Address = (uint)Registers.Get(MipsGprRegisters.Pc),
+                        Instruction = swcz.ConvertToInt(),
+                        Value = swcz.Coprocessor
+                    });
                     break;
                 }
-                MipsMachine.DataMemory.WriteWord(address, value);
-                MipsMachine.OnMemoryAccess(new MemoryAccessEventArgs()
-                {
-                    Address = address,
-                    Mode = MemoryAccessMode.Write,
-                    Size = 4,
-                    Source = MemoryAccessSource.Instruction
-                });
+                Int32ToBytes(value, memoryBuffer.Span);
+                WriteMemory(address, memoryBuffer);
                 break;
             }
             default:

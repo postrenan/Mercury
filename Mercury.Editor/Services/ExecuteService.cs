@@ -61,7 +61,6 @@ public sealed class ExecuteService : BaseService<ExecuteService>, IDisposable {
 
         // criar maquina
         currentMachine = new MachineBuilder()
-            .WithInMemoryStdio()
             .WithMemory(memoryBuilder
                 .Build())
             .WithMips()

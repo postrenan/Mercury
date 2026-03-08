@@ -10,13 +10,13 @@
 /// Convencao do mips32: https://gist.github.com/yamnikov-oleg/454f48c3c45b735631f2
 /// 
 ///  </remarks>
-public sealed class MockLinux : MipsOperatingSystem {
+public sealed class MockLinux : MipsSyscallModule {
 
     public override string FriendlyName => "Linux 1.0";
     
     public override string Identifier => "linux";
 
-    protected override ValueTask OnSyscall(uint code) {
+    protected override ValueTask ExecuteSyscall(uint code) {
         switch (code) {
             case 0:
                 Exit();

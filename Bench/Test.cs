@@ -15,6 +15,10 @@ namespace Bench;
  * on csproj to avoid satellite resource assemblies for Roslyn lib
  */
 
+/*
+ * Backend compilation for editor design tool
+ */
+
 public static class Logger {
     public static void Log<T>(T o) {
         Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] {o}");

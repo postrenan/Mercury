@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Mercury.Editor;
 
@@ -10,11 +12,13 @@ namespace Mercury.Editor;
 /// </summary>
 public class Navigation {
     private static Navigation? _instance;
+    private readonly ILogger<Navigation> _logger;
 
     public Navigation(ContentControl contentControl, bool setAsDefault = true) {
         if (_instance is not null && setAsDefault) {
             throw new NotSupportedException("There can be only one default navigation");
         }
+        _logger = App.Services.GetRequiredService<ILogger<Navigation>>();
         host = contentControl;
         if (setAsDefault) {
             _instance = this;
@@ -47,6 +51,10 @@ public class Navigation {
             host.Content = ctrl;
             current = target;
             hasCurrent = true;
+            _logger.LogInformation("Setting nav View to {View}", ctrl.GetType().Name);
+        }
+        else {
+            _logger.LogInformation("Skipping navigation");
         }
     }
 

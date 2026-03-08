@@ -22,7 +22,7 @@ public partial class CodeTabViewModel : BaseViewModel<CodeTabViewModel, CodeTabV
     [ObservableProperty] private double projectViewColumnWidth;
     [ObservableProperty] private double problemsViewRowHeight;
 
-    private CancellationTokenSource cts = new();
+    private CancellationTokenSource? cts = new();
 
     public CodeTabViewModel(ProjectService projectService) {
         this.projectService = projectService;
@@ -66,7 +66,7 @@ public partial class CodeTabViewModel : BaseViewModel<CodeTabViewModel, CodeTabV
             Logger.LogInformation("Saving layout information on code tab");
             projectService.SaveProject();
         }
-        return !cts.IsCancellationRequested;
+        return !(cts?.IsCancellationRequested ?? true);
     }
 
     public void OnLoad() {

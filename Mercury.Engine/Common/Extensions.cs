@@ -98,6 +98,15 @@ public static class Extensions {
         }
     }
 
+    /// <summary>
+    /// Reads a line from a channel of chars. The line is read until a newline character ('\n') or an
+    /// EOF character (0x1A) is encountered. The method returns the line as a string, including the newline character
+    /// if it was present. If the first character read is an EOF, it returns an empty string. The method will wait for
+    /// data to be available in the channel before reading, and it can be canceled using the provided cancellation token.
+    /// </summary>
+    /// <param name="reader">A reader from the channel that will be used</param>
+    /// <param name="cancellationToken">Token to cancel the async operation</param>
+    /// <returns>A task with the resulting line read</returns>
     public static async ValueTask<string> ReadLine(this ChannelReader<char> reader,
         CancellationToken cancellationToken = default) {
         await reader.WaitToReadAsync(cancellationToken);
@@ -111,7 +120,4 @@ public static class Extensions {
         }
         return sb.ToString();
     }
-    
-    
-    
 }

@@ -17,13 +17,12 @@ public class MonocycleTest {
                 .With4Gb()
                 .WithVolatileStorage()
                 .Build())
-            .WithInMemoryStdio()
             .WithMips()
             .WithMipsMonocycle()
             .WithMarsOs()
             .Build();
         
-        Monocycle cpu = (Monocycle)mipsMachine.Cpu; 
+        Monocycle cpu = (Monocycle)mipsMachine.Modules.First(x => x is Monocycle); 
         int[] code = [
             0x2008_000f,
             0x2009_0014,
@@ -35,12 +34,13 @@ public class MonocycleTest {
         mipsMachine.LoadProgram(code, Span<int>.Empty);
         bool hasBreaked = false;
         
+        var pool = new InstructionPool();
         cpu.SignalException += (e) => {
             if(e.Signal != SignalExceptionEventArgs.SignalType.Breakpoint) {
                 return Task.CompletedTask;
             }
 
-            IInstruction? inst = Disassembler.Disassemble((uint)e.Instruction);
+            IInstruction? inst = Disassembler.Disassemble((uint)e.Instruction, pool);
             if(inst is not Break brk) {
                 return Task.CompletedTask;
             }
@@ -51,7 +51,7 @@ public class MonocycleTest {
         };
         cpu.UseBranchDelaySlot = false;
         while (!cpu.IsClockingFinished() && !hasBreaked) {
-                     cpu.ClockAsync().AsTask().GetAwaiter().GetResult();
+            cpu.ClockAsync().GetAwaiter().GetResult();
         }
     }
 
@@ -62,7 +62,6 @@ public class MonocycleTest {
                 .With4Gb()
                 .WithVolatileStorage()
                 .Build())
-            .WithInMemoryStdio()
             .WithMips()
             .WithMipsMonocycle()
             .WithMarsOs()
@@ -70,16 +69,13 @@ public class MonocycleTest {
         
         Assert.IsNotNull(mipsMachine.DataMemory);
         Assert.IsNotNull(mipsMachine.Memory);
-        Assert.IsNotNull(mipsMachine.Cpu);
-        Assert.IsNotNull(mipsMachine.Os);
-        Assert.IsNotNull(mipsMachine.Cpu.Machine);
-        Assert.AreSame(mipsMachine.Cpu.Registers, mipsMachine.Registers);
-        Assert.IsNotNull(mipsMachine.Os.Machine);
+        Assert.IsNotNull(mipsMachine.CpuModule);
+        Assert.IsNotNull(mipsMachine.SyscallModule);
         
         const ulong gb = 1024 * 1024 * 1024;
         Assert.AreEqual(4 * gb, (mipsMachine.DataMemory as Engine.Memory.Memory)!.Size);
-        Assert.IsInstanceOfType<Monocycle>(mipsMachine.Cpu);
-        Assert.IsInstanceOfType<Mars>(mipsMachine.Os);
+        Assert.IsInstanceOfType<Monocycle>(mipsMachine.CpuModule);
+        Assert.IsInstanceOfType<Mars>(mipsMachine.SyscallModule);
     }
 
     [TestMethod]
@@ -89,7 +85,6 @@ public class MonocycleTest {
                 .With4Gb()
                 .WithVolatileStorage()
                 .Build())
-            .WithInMemoryStdio()
             .WithMips()
             .WithMipsMonocycle()
             .WithMarsOs()
@@ -156,10 +151,12 @@ public class MonocycleTest {
         ];
         mipsMachine.LoadProgram(code, Span<int>.Empty);
 
+        int i = 0;
         while (!mipsMachine.IsClockingFinished()) {
             mipsMachine.ClockAsync().AsTask().GetAwaiter().GetResult();
+            i++;
         }
         
-        Assert.AreEqual(0, mipsMachine.Cpu.ExitCode);    
+        Assert.AreEqual(0, ((Monocycle)mipsMachine.Modules.Find(x => x is Monocycle)).ExitCode);    
     }
 }

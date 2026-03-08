@@ -1,8 +1,10 @@
 using System.Buffers.Binary;
+using Mercury.Engine.Common;
+using Mercury.Engine.Common.Events;
 
 namespace Mercury.Engine.Memory;
 
-public sealed class Memory : IDisposable, IMemory
+public sealed class Memory : IDisposable, IMemory, IModule
 {
     /// <summary>
     /// Total size of the memory in bytes.
@@ -222,7 +224,7 @@ public sealed class Memory : IDisposable, IMemory
         }
     }
 
-    public void Write(ulong address, Span<byte> bytes) {
+    public void Write(ulong address, ReadOnlySpan<byte> bytes) {
         if (address >= Size) {
             throw new InvalidAddressException($"Address out of bounds. Expected Range: [0,{Size}[. Got: {address}");
         }
@@ -251,7 +253,7 @@ public sealed class Memory : IDisposable, IMemory
         }
     }
 
-    public void Write(ulong address, Span<int> words) {
+    public void Write(ulong address, ReadOnlySpan<int> words) {
         if (address >= Size) {
             throw new InvalidAddressException($"Address out of bounds. Expected Range: [0,{Size}[. Got: {address}");
         }
@@ -342,6 +344,8 @@ public sealed class Memory : IDisposable, IMemory
     }
 
     public void Dispose() {
+        UnsubscribeFromEvents();
+        
         foreach(Page? p in loadedPages)
         {
             if (p is null) {
@@ -352,5 +356,29 @@ public sealed class Memory : IDisposable, IMemory
             }
         }
         coldStorage.Dispose();
+    }
+    
+    private EventBus eventBus;
+    private List<IDisposable> subscriptions = [];
+
+    public void SubscribeToEvents(EventBus eventBus) {
+        this.eventBus = eventBus;
+        subscriptions.Add(eventBus.Subscribe<ReadMemoryEvent>(HandleRead));
+        subscriptions.Add(eventBus.Subscribe<WriteMemoryEvent>(HandleWrite));
+    }
+
+    public void UnsubscribeFromEvents() {
+        foreach(IDisposable  s in subscriptions) {
+            s.Dispose();
+        }
+        subscriptions.Clear();
+    }
+
+    private void HandleRead(ReadMemoryEvent readMemoryEvent) {
+        Read(readMemoryEvent.Address, readMemoryEvent.Buffer.Span[..(int)readMemoryEvent.Size]);
+    }
+
+    private void HandleWrite(WriteMemoryEvent writeMemoryEvent) {
+        Write(writeMemoryEvent.Address, writeMemoryEvent.Buffer.Span[..(int)writeMemoryEvent.Size]);
     }
 }
