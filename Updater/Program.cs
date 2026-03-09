@@ -85,6 +85,13 @@ internal static class Program {
 
         Console.WriteLine("Update successfull!");
         if (executable is null) return 0;
+        if (OperatingSystem.IsLinux()) {
+            UnixFileMode filemode = File.GetUnixFileMode(executable);
+            filemode |=  UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.GroupExecute;
+            File.SetUnixFileMode(executable,filemode);
+            Console.WriteLine("Set execute flags for executable");
+        }
+        
         Console.WriteLine("Launching application");
         try {
             Launch(executable, currentPackage, passingArgs); // currentPackage here has the newPackage files
@@ -133,7 +140,7 @@ internal static class Program {
 
                 try {
                     File.Move(sourcePath, destinationPath);
-                    Console.WriteLine($"Moved file {sourcePath} to {destinationPath}");
+                    Console.WriteLine($"Moved file {sourcePath}");
                 }
                 catch (Exception ex) {
                     Console.WriteLine($"Couldn't move file: {sourcePath}->{destinationPath}. Error: \"{ex.Message}\"");
@@ -141,12 +148,13 @@ internal static class Program {
             }
 
             foreach (string entry in Directory.EnumerateDirectories(@new)) {
-                string? directoryName = Path.GetDirectoryName(entry);
+                string? directoryName = Path.GetFileName(entry);
                 if (directoryName is null) {
                     Console.WriteLine($"Error. Skipping directory {entry}");
                     continue;
                 }
-                Move(Path.Combine(old, directoryName), Path.Combine(@new, directoryName), depth++);
+                Console.WriteLine("Recursing for folder " + directoryName);
+                Move(Path.Combine(old, directoryName), Path.Combine(@new, directoryName), depth+1);
             }
         }
 
