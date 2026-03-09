@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Mercury.Editor.Converters;
 using Mercury.Editor.Extensions;
+using Mercury.Editor.Localization;
 using Mercury.Editor.Models;
 
 namespace Mercury.Editor.Services;
@@ -121,12 +123,15 @@ public sealed class SettingsService : BaseService<SettingsService>, IDisposable 
     /// <summary>
     /// Returns the default settings and preferences for a fresh installation.
     /// </summary>
-    public UserPreferences GetDefaultPreferences() => new(){
-        Language = CultureInfo.InstalledUICulture,
-        OnlineCheckFrequency = TimeSpan.FromHours(24),
-        LastOnlineCheck = DateTime.MinValue,
-        Theme = "Dark"
-    };
+    public UserPreferences GetDefaultPreferences() {
+        bool userCultureFound = LocalizationManager.AvailableCultures.Any(x => x.Equals(CultureInfo.CurrentUICulture));
+        return new UserPreferences {
+            Language = userCultureFound ? CultureInfo.CurrentUICulture : new CultureInfo("en-US"),
+            OnlineCheckFrequency = TimeSpan.FromHours(24),
+            LastOnlineCheck = DateTime.MinValue,
+            Theme = "Dark"
+        };
+    }
 
     private bool UpdatePreferences(UserPreferences preferences) {
         if(preferences.ConfigVersion == UserPreferences.LatestConfigVersion) {

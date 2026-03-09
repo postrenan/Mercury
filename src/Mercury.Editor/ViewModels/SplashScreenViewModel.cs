@@ -60,6 +60,8 @@ public sealed partial class SplashScreenViewModel : BaseViewModel<SplashScreenVi
     public async Task InitializeAsync() {
         Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0,0);
         LocalizationManager.CultureChanged += Localize;
+        GuessCulture(); 
+        
 
         Directory.CreateDirectory(settings.AppDirectory.ToString());
         
@@ -678,5 +680,17 @@ public sealed partial class SplashScreenViewModel : BaseViewModel<SplashScreenVi
         bool valid = rsa.VerifyData(packageStream, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
         Logger.LogInformation("RSA::VerifyData() returned {Value}", valid);
         return valid;
+    }
+
+    private void GuessCulture() {
+        bool found = LocalizationManager.AvailableCultures.Any(x => x.Equals(CultureInfo.CurrentUICulture));
+        // if user's current culture is not in the list of supported cultures, default to english
+        if (found) {
+            LocalizationManager.CurrentCulture = CultureInfo.CurrentUICulture;
+        }else {
+            Logger.LogWarning("User's culture is not on the list of available cultures, defaulting to english. " +
+                              "User culture: \"{Name}\"", CultureInfo.CurrentUICulture.Name);
+            LocalizationManager.CurrentCulture = new CultureInfo("en-US");
+        }
     }
 }

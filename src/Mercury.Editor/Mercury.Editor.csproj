@@ -8,7 +8,7 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <IsPackable>false</IsPackable>
     <Authors>Rodrigo Appelt</Authors>
-    <AssemblyVersion>0.4</AssemblyVersion>
+    <AssemblyVersion>0.5</AssemblyVersion>
     <NeutralLanguage>en</NeutralLanguage>
     
     <!-- publish and trimming -->
@@ -112,7 +112,7 @@
   
   <!-- licenca e chave publica-->
   <ItemGroup>
-    <EmbeddedResource Include="..\LICENSE.txt"/>
-    <EmbeddedResource Include="..\public.key"/>
+    <EmbeddedResource Include="..\..\LICENSE.txt"/>
+    <EmbeddedResource Include="..\..\scripts\public.key"/>
   </ItemGroup>
 </Project>

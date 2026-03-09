@@ -3,6 +3,9 @@
     <File Path="../scripts/installer.iss" />
     <File Path="../scripts/publish.ps1" />
   </Folder>
+  <Folder Name="/Docs/">
+    <File Path="../README.md" />
+  </Folder>
   <Project Path="Bench/Bench.csproj" />
   <Project Path="Mercury.Editor.Generators/Mercury.Editor.Generators.csproj" />
   <Project Path="Mercury.Editor/Mercury.Editor.csproj" />
