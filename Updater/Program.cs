@@ -113,10 +113,14 @@ internal static class Program {
         }
         
         // move in new files
-        Move(oldPath, newPath);
+        Move(oldPath, newPath, 1);
         return true;
 
-        void Move(string old, string @new) {
+        void Move(string old, string @new, int depth) {
+            if (depth > 10) {
+                Console.WriteLine("Maybe error! Recursive Depth reached 11. Killing this branch");
+                return;
+            }
             foreach (string entry in Directory.EnumerateFiles(@new)) {
                 string sourceFilename = Path.GetFileName(entry);
                 string destFilename = sourceFilename;
@@ -129,6 +133,7 @@ internal static class Program {
 
                 try {
                     File.Move(sourcePath, destinationPath);
+                    Console.WriteLine($"Moved file {sourcePath} to {destinationPath}");
                 }
                 catch (Exception ex) {
                     Console.WriteLine($"Couldn't move file: {sourcePath}->{destinationPath}. Error: \"{ex.Message}\"");
@@ -141,7 +146,7 @@ internal static class Program {
                     Console.WriteLine($"Error. Skipping directory {entry}");
                     continue;
                 }
-                Move(Path.Combine(old, directoryName), Path.Combine(@new, directoryName));
+                Move(Path.Combine(old, directoryName), Path.Combine(@new, directoryName), depth++);
             }
         }
 

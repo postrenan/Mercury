@@ -217,10 +217,19 @@ public partial class UpdaterService : BaseService<UpdaterService> {
             .Path();
         
         PathObject updater = appLocation.File(OperatingSystem.IsWindows() ? "Updater.exe" : "Updater");
+        string updaterPath = updater.ToString(); 
 
         if (!updater.Exists()) {
             Logger.LogError("Could not find Updater executable! Will not update");
             return;
+        }
+
+        if (OperatingSystem.IsLinux()) {
+            // add execute permissions on updater
+            UnixFileMode fileMode = File.GetUnixFileMode(updaterPath);
+            fileMode |= UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.GroupExecute;
+            File.SetUnixFileMode(updater.ToString(), fileMode);
+            Logger.LogInformation("Adding execute permission to Updater executable");
         }
         
         ProcessStartInfo startInfo = new() {
