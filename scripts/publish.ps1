@@ -1,7 +1,17 @@
-$csprojPath = Resolve-Path "./Mercury.Editor/Mercury.Editor.csproj"
-$publishDir = Resolve-Path "./publish"
+$csprojPath = Resolve-Path "../src/Mercury.Editor/Mercury.Editor.csproj"
+$updaterProjectPath = Resolve-Path "../src/Updater/Updater.csproj"
+$publishDir = Resolve-Path "../publish"
 $buildDir = "$($publishDir)/build"
 $privateKeyPath = Resolve-Path "./private.key"
+
+if(-not Test-Path $privateKeyPath) {
+		Write-Host "Nao encontrei arquivo da chave privada! Abortando"
+		exit 1
+}
+if(-not Test-Path $csprojPath){
+		Write-Host "Nao encontrei projeto! Abortando"
+		exit 1
+}
 
 [xml]$xml = Get-Content $csprojPath
 $version = ($xml.Project.PropertyGroup.AssemblyVersion | Out-String).Trim()
@@ -33,12 +43,11 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "Publishing Updater for Windows..."
-dotnet publish "./Updater/" -o $buildDir -c Release --self-contained -r win-x64
+dotnet publish $updaterProjectPath -o $buildDir -c Release --self-contained -r win-x64
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Failed to build Updater"
     exit 1
 }
-
 
 if (Test-Path $zipNameWin) {
     Remove-Item $zipNameWin -Force
@@ -73,7 +82,7 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 Write-Host "Publishing Updater for Linux..."
-dotnet publish "./Updater/" -o $buildDir -c Release --self-contained -r linux-x64
+dotnet publish $updaterProjectPath -o $buildDir -c Release --self-contained -r linux-x64
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Failed to build Updater"
     exit 1
