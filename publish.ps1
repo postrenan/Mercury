@@ -1,7 +1,7 @@
-$csprojPath = "./Mercury.Editor/Mercury.Editor.csproj"
-$publishDir = "./publish"
+$csprojPath = Resolve-Path "./Mercury.Editor/Mercury.Editor.csproj"
+$publishDir = Resolve-Path "./publish"
 $buildDir = "$($publishDir)/build"
-$privateKeyPath = "./private.key"
+$privateKeyPath = Resolve-Path "./private.key"
 
 [xml]$xml = Get-Content $csprojPath
 $version = ($xml.Project.PropertyGroup.AssemblyVersion | Out-String).Trim()
@@ -9,8 +9,8 @@ if (-not $version) {
     Write-Error "tag <AssemblyVersion> not found on .csproj"
     exit 1
 }
-$zipNameWin = "Mercury_$(version)_Windows.rar"
-$zipNameLinux = "Mercury_$(version)_Linux.tar.gz"
+$zipNameWin = "Mercury_$($version)_Windows.rar"
+$zipNameLinux = "Mercury_$($version)_Linux.tar.gz"
 Write-Host "Detected version: $version"
 
 # clear publish folder contents
@@ -83,7 +83,7 @@ if (Test-Path $zipNameLinux) {
 }
 Write-Host "Creating $zipNameLinux..."
 Push-Location $buildDir
-tar -cvzf $zipNameLinux "*"
+tar -cvzf "../$zipNameLinux" "*"
 Pop-Location
 Write-Host "Zip file created: $zipNameLinux"
 
