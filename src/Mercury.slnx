@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/Scripts/">
+    <File Path="../scripts/installer.iss" />
+    <File Path="../scripts/publish.ps1" />
+  </Folder>
+  <Project Path="Bench/Bench.csproj" />
+  <Project Path="Mercury.Editor.Generators/Mercury.Editor.Generators.csproj" />
+  <Project Path="Mercury.Editor/Mercury.Editor.csproj" />
+  <Project Path="Mercury.Engine.Generators/Mercury.Engine.Generators.csproj" />
+  <Project Path="Mercury.Engine.Test/Mercury.Engine.Test.csproj" />
+  <Project Path="Mercury.Engine/Mercury.Engine.csproj" />
+  <Project Path="Updater/Updater.csproj" />
+</Solution>

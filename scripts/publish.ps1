@@ -103,3 +103,6 @@ $rsa.ImportRSAPrivateKey([IO.File]::ReadAllBytes($privateKeyPath),[ref]0)
 $signature = $rsa.SignData($data,[System.Security.Cryptography.HashAlgorithmName]::SHA256,[System.Security.Cryptography.RSASignaturePadding]::Pkcs1)
 [IO.File]::WriteAllBytes("$publishDir/$zipNameLinux.sig", $signature)
 Write-Host "Signature saved at: $publishDir/$zipNameLinux.sig"
+
+Write-Host "Removing build files..."
+Remove-Item $buildDir -Recurse -Force
