@@ -349,7 +349,7 @@ public sealed partial class SplashScreenViewModel : BaseViewModel<SplashScreenVi
 
         GuideSettings? guideSettings = guideProperty.Deserialize<GuideSettings>(SettingsSerializerContext.Default.GuideSettings);
         if (guideSettings is null) {
-            Logger.LogError("Detected newer version for guides but couldn't parse structrue json. Consider updating the app.");
+            Logger.LogError("Detected newer version for guides but couldn't parse structure json. Consider updating the app.");
             return;
         }
 
@@ -580,10 +580,10 @@ public sealed partial class SplashScreenViewModel : BaseViewModel<SplashScreenVi
     private void UpdateInstaller() {
         PathObject appLocation = Assembly.GetAssembly(typeof(App))!.Location.ToFilePath()
             .Path();
-        PathObject newInstaller = appLocation.File("Updater2.exe");
+        PathObject newInstaller = appLocation.File(OperatingSystem.IsWindows() ? "Updater2.exe" : "Updater2");
         if (!newInstaller.Exists()) return;
         Logger.LogInformation("Removing old updater and using new one");
-        PathObject oldInstaller = appLocation.File("Updater.exe");
+        PathObject oldInstaller = appLocation.File(OperatingSystem.IsWindows() ? "Updater.exe" : "Updater");
         oldInstaller.Delete();
         File.Delete(oldInstaller.ToString());
         File.Move(newInstaller.ToString(), oldInstaller.ToString());
@@ -623,11 +623,17 @@ public sealed partial class SplashScreenViewModel : BaseViewModel<SplashScreenVi
             return;
         }
 
-        GithubAsset? signatureAsset = latest.Assets.FirstOrDefault(x => x.Type == GithubFileType.Signature);
-        GithubAsset asset = latest.Assets.First(x => (x.Type & GithubFileType.Compressed) > 0);
+        GithubAsset? asset = latest.Assets.FirstOrDefault(x => (x.Type & GithubFileType.Compressed) > 0
+            && x.Name.Contains(OperatingSystem.IsWindows() ? "Windows" : "Linux"));
+        if (asset is null) {
+            Logger.LogWarning("Could not find suitable asset in new release for this platform");
+            return;
+        }
+        GithubAsset? signatureAsset = latest.Assets.FirstOrDefault(x => x.Type == GithubFileType.Signature
+            && x.Name == $"{asset.Name}.sig");
 
         if (signatureAsset is null) {
-            Logger.LogWarning("Found suitable release, but it is not signed!");
+            Logger.LogWarning("Found suitable release {ReleaseName}, but could not find signature", asset.Name);
             return;
         }
 

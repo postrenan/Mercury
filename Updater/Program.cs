@@ -103,7 +103,8 @@ internal static class Program {
         
         // delete old files but not updater.exe
         foreach (string file in Directory.EnumerateFiles(oldPath)) {
-            if (!file.ToLower().EndsWith("updater.exe")) {
+            // account for linux lack of .exe extensions 
+            if (!file.ToLower().EndsWith("updater.exe") && !file.ToLower().EndsWith("updater")) {
                 File.Delete(file);
             }
         }
@@ -119,8 +120,8 @@ internal static class Program {
             foreach (string entry in Directory.EnumerateFiles(@new)) {
                 string sourceFilename = Path.GetFileName(entry);
                 string destFilename = sourceFilename;
-                if (sourceFilename.Contains("Updater.exe")) {
-                    destFilename = "Updater2.exe";
+                if (sourceFilename.ToLower().EndsWith("updater.exe") || sourceFilename.ToLower().EndsWith("updater")) {
+                    destFilename = OperatingSystem.IsWindows() ? "Updater2.exe" : "Updater2";
                 }
 
                 string sourcePath = Path.Combine(@new, sourceFilename);
@@ -130,7 +131,7 @@ internal static class Program {
                     File.Move(sourcePath, destinationPath);
                 }
                 catch (Exception ex) {
-                    Console.WriteLine($"Couldnt move file: {sourcePath}->{destinationPath}. Error: \"{ex.Message}\"");
+                    Console.WriteLine($"Couldn't move file: {sourcePath}->{destinationPath}. Error: \"{ex.Message}\"");
                 }
             }
 

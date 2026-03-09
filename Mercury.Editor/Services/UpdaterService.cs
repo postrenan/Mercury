@@ -204,20 +204,27 @@ public partial class UpdaterService : BaseService<UpdaterService> {
 
     public void Update(string newPackageDirectory) {
         string[] args = Environment.GetCommandLineArgs();
-        if (args[0].EndsWith(".dll")) {
-            args[0] = args[0].Replace(".dll", ".exe"); // :)
+        if (args[0].EndsWith(".dll")) { // linux binaries dont have '.exe'
+            if (OperatingSystem.IsWindows()) {
+                args[0] = args[0].Replace(".dll", ".exe"); // :)
+            }
+            else if (OperatingSystem.IsLinux()) {
+                args[0] = args[0].Replace(".dll", ""); // :)
+            }
         }
         int pid = Environment.ProcessId;
         PathObject appLocation = Assembly.GetAssembly(typeof(App))!.Location.ToFilePath()
             .Path();
+        
+        PathObject updater = appLocation.File(OperatingSystem.IsWindows() ? "Updater.exe" : "Updater");
 
-        if (!File.Exists(appLocation.File("Updater.exe").ToString())) {
+        if (!updater.Exists()) {
             Logger.LogError("Could not find Updater executable! Will not update");
             return;
         }
         
         ProcessStartInfo startInfo = new() {
-            FileName = appLocation.File("Updater.exe").ToString(),
+            FileName = updater.ToString(),
             Arguments = $"{pid} {appLocation} {newPackageDirectory} {string.Join(" ",args)}"
         };
         Process.Start(startInfo);
