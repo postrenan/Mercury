@@ -21,38 +21,43 @@ using Mercury.Engine.Memory;
 using Mercury.Engine.Mips.Runtime;
 using Microsoft.Extensions.Logging;
 using Mercury.Editor.Extensions;
+using Mercury.Engine.Common.Events;
+using Machine = Mercury.Engine.Common.Machine;
 
 namespace Mercury.Editor.ViewModels.Execute;
 
 public partial class RamViewModel : BaseViewModel<RamViewModel, RamView>, IDisposable {
 
-    [ObservableProperty]
-    private ObservableCollection<Location> locations = [];
+    #region Observable Properties
 
+    [ObservableProperty] private ObservableCollection<Location> locations = [];
     [ObservableProperty, NotifyPropertyChangedFor(nameof(Rows))]
     private int selectedSectionIndex;
-
     public ObservableCollection<RamVisualization> AvailableVisualizationModes { get; private init; } = [];
-
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(Rows))] private int selectedModeIndex;
-
-    private MipsMachine? currentMachine;
-
-    [ObservableProperty]
-    private ObservableCollection<RamRow> rows = [];
-
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Rows))]
+    private int selectedModeIndex;
+    private Machine? currentMachine;
+    [ObservableProperty] private ObservableCollection<RamRow> rows = [];
     [ObservableProperty] private int selectedRowIndex = -1;
 
+    #endregion
+    
     private int currentPage;
     private ulong currentMemoryAccess;
+    private readonly List<IDisposable> subscriptions = [];
+
+    #region Constants
 
     private const uint BytesPerPage = 256;
     private const uint BytesPerRow = 16;
     private const int RowCount = 16;
 
+    #endregion
+    
+
     public RamViewModel() {
         WeakReferenceMessenger.Default.Register<RamViewModel, ProgramLoadMessage>(this, OnProgramLoad);
-        WeakReferenceMessenger.Default.Register<RamViewModel,LabelFocusMessage>(this,OnLabelFocus);
+        WeakReferenceMessenger.Default.Register<RamViewModel, LabelFocusMessage>(this, OnLabelFocus);
         LocalizationManager.CultureChanged += OnLocalize;
     }
 
@@ -63,12 +68,14 @@ public partial class RamViewModel : BaseViewModel<RamViewModel, RamView>, IDispo
     private static void OnProgramLoad(RamViewModel vm, ProgramLoadMessage msg) {
         // load sectors from elf
         vm.PopulateLocations(msg.Elf);
-        if(vm.currentMachine is not null) {
-            // desinscreve do evento de acesso de memoria da maquina antiga
-            vm.currentMachine.MemoryAccessed -= vm.MemoryAccessed;
+        foreach (IDisposable disposable in vm.subscriptions) {
+            disposable.Dispose();
         }
-        vm.currentMachine = msg.MipsMachine;
-        vm.currentMachine.MemoryAccessed += vm.MemoryAccessed;
+        vm.subscriptions.Clear();
+
+        vm.currentMachine = msg.Machine;
+        vm.subscriptions.Add(msg.Machine.EventBus.Subscribe<ReadMemoryEvent>(e => vm.MemoryAccessed(e.Address)));
+        vm.subscriptions.Add(msg.Machine.EventBus.Subscribe<WriteMemoryEvent>(e => vm.MemoryAccessed(e.Address)));
         vm.SelectedSectionIndex = vm.Locations.IndexOf(x => x.Name == ".data");
         vm.PopulateRam();
         vm.DisplayRam();
@@ -80,7 +87,7 @@ public partial class RamViewModel : BaseViewModel<RamViewModel, RamView>, IDispo
     private static void OnLabelFocus(RamViewModel vm, LabelFocusMessage msg) {
         int nearest = -1;
         for (int i = 0; i < vm.Locations.Count; i++) {
-            ulong next = i >= vm.Locations.Count-1 ? ulong.MaxValue : vm.Locations[i+1].LoadAddress;
+            ulong next = i >= vm.Locations.Count - 1 ? ulong.MaxValue : vm.Locations[i + 1].LoadAddress;
             if (msg.Address >= vm.Locations[i].LoadAddress &&
                 msg.Address < next) {
                 nearest = i;
@@ -94,17 +101,19 @@ public partial class RamViewModel : BaseViewModel<RamViewModel, RamView>, IDispo
         }
 
         vm.SelectedSectionIndex = nearest;
-        
+
         // find correct page
         long offset = (long)(msg.Address - vm.Locations[nearest].LoadAddress);
         vm.currentPage = (int)(offset / BytesPerPage);
-        vm.Logger.LogInformation("Changing RamView to section {section} and page {page}", vm.Locations[nearest].Name, vm.currentPage);
+        vm.Logger.LogInformation("Changing RamView to section {section} and page {page}", vm.Locations[nearest].Name,
+            vm.currentPage);
         vm.PopulateRam();
         vm.DisplayRam();
     }
-    
-    private void MemoryAccessed(object? sender, MemoryAccessEventArgs e) {
-        currentMemoryAccess = e.Address;
+
+    private void MemoryAccessed(ulong address) {
+        Logger.LogDebug("Memory accessed {address}", address);
+        currentMemoryAccess = address;
         HighlightRow(currentMemoryAccess);
     }
 
@@ -124,7 +133,7 @@ public partial class RamViewModel : BaseViewModel<RamViewModel, RamView>, IDispo
         // isolar localizacoes que nos importam
         List<Segment<uint>> segments = elf.Segments
             .Where(x => x.Type == SegmentType.Load)
-            .ToList(); 
+            .ToList();
         List<Section<uint>> sections = elf.Sections
             .Where(x => x.Type == SectionType.ProgBits)
             .ToList();
@@ -136,6 +145,7 @@ public partial class RamViewModel : BaseViewModel<RamViewModel, RamView>, IDispo
             if (candidate is null) {
                 continue;
             }
+
             string? name = candidate.Name;
             Location loc = new() {
                 LoadAddress = segment.Address,
@@ -143,6 +153,7 @@ public partial class RamViewModel : BaseViewModel<RamViewModel, RamView>, IDispo
             };
             Locations.Add(loc);
         }
+
         SelectedSectionIndex = -1;
         SelectedSectionIndex = 0;
         CreateModeList();
@@ -153,8 +164,8 @@ public partial class RamViewModel : BaseViewModel<RamViewModel, RamView>, IDispo
     private void CreateModeList() {
         AvailableVisualizationModes.Clear();
         AvailableVisualizationModes.AddRange([
-                RamVisualization.Hexadecimal, 
-                RamVisualization.Decimal, 
+                RamVisualization.Hexadecimal,
+                RamVisualization.Decimal,
                 RamVisualization.Ascii,
                 RamVisualization.Float
             ]
@@ -164,7 +175,7 @@ public partial class RamViewModel : BaseViewModel<RamViewModel, RamView>, IDispo
     private void PopulateRam() {
         Location loc = Locations[SelectedSectionIndex];
         long addr = loc.LoadAddress;
-        
+
         if (addr < BytesPerPage * currentPage) {
             addr = 0;
         }
@@ -176,17 +187,19 @@ public partial class RamViewModel : BaseViewModel<RamViewModel, RamView>, IDispo
         if (currentMachine is null) {
             return;
         }
+
         for (uint i = 0; i < RowCount; i++) {
             uint offset = (uint)(addr + i * BytesPerRow);
             RamRow row = new() {
                 RowAddress = offset,
-                Data0 = currentMachine.DataMemory.ReadWord(offset + 0x0),
-                Data4 = currentMachine.DataMemory.ReadWord(offset + 0x4),
-                Data8 = currentMachine.DataMemory.ReadWord(offset + 0x8),
-                DataC = currentMachine.DataMemory.ReadWord(offset + 0xC)
+                Data0 = currentMachine.MemoryModule.ReadWord(offset + 0x0),
+                Data4 = currentMachine.MemoryModule.ReadWord(offset + 0x4),
+                Data8 = currentMachine.MemoryModule.ReadWord(offset + 0x8),
+                DataC = currentMachine.MemoryModule.ReadWord(offset + 0xC)
             };
             Rows.Add(row);
         }
+
         HighlightRow(currentMemoryAccess);
     }
 
@@ -195,20 +208,22 @@ public partial class RamViewModel : BaseViewModel<RamViewModel, RamView>, IDispo
         if (currentMachine is null) {
             return;
         }
+
         foreach (RamRow row in Rows) {
             row.Data0String = Display(row.Data0);
             row.Data4String = Display(row.Data4);
             row.Data8String = Display(row.Data8);
             row.DataCString = Display(row.DataC);
         }
+
         //OnPropertyChanged(nameof(Rows));
         return;
-        
+
         string Display(int data) {
             if (SelectedModeIndex == -1) {
                 SelectedModeIndex = 0;
             }
-            
+
             switch (AvailableVisualizationModes[SelectedModeIndex]) {
                 case RamVisualization.Hexadecimal:
                     return "0x" + data.ToString("x8");
@@ -217,7 +232,7 @@ public partial class RamViewModel : BaseViewModel<RamViewModel, RamView>, IDispo
                 case RamVisualization.Ascii:
                     Span<byte> bytes = stackalloc byte[4];
                     Span<char> chars = stackalloc char[4];
-                    switch (currentMachine!.DataMemory.Endianess) {
+                    switch (currentMachine!.MemoryModule.Endianess) {
                         case Endianess.LittleEndian:
                             BinaryPrimitives.WriteInt32LittleEndian(bytes, data);
                             break;
@@ -227,6 +242,7 @@ public partial class RamViewModel : BaseViewModel<RamViewModel, RamView>, IDispo
                         default:
                             throw new NotSupportedException();
                     }
+
                     Encoding.ASCII.GetChars(bytes, chars);
                     return $"{chars[0].Escape()} {chars[1].Escape()} {chars[2].Escape()} {chars[3].Escape()}";
                 case RamVisualization.Float:
@@ -246,6 +262,7 @@ public partial class RamViewModel : BaseViewModel<RamViewModel, RamView>, IDispo
         if (value == -1) {
             return;
         }
+
         PopulateRam();
         DisplayRam();
     }
@@ -267,7 +284,7 @@ public partial class RamViewModel : BaseViewModel<RamViewModel, RamView>, IDispo
     private bool CanNavigate() {
         return currentMachine is not null;
     }
-    
+
     public void Dispose() {
         LocalizationManager.CultureChanged -= OnLocalize;
     }
@@ -290,6 +307,7 @@ public class RamVisualizationConverter : IValueConverter {
         if (value is not RamVisualization visu) {
             return null;
         }
+
         return visu switch {
             RamVisualization.Decimal => RamResources.RamDecModeValue,
             RamVisualization.Ascii => RamResources.RamTextModeValue,

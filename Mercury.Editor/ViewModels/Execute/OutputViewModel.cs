@@ -47,10 +47,10 @@ public partial class OutputViewModel : BaseViewModel<OutputViewModel, OutputView
             sub.Dispose();
         }
         vm.subscribers.Clear();
-        vm.eventBus = msg.MipsMachine.EventBus;
+        vm.eventBus = msg.Machine.EventBus;
         vm.subscribers.Add(vm.eventBus.Subscribe<StdOutWriteEvent>(vm.HandleStdOut));
         vm.subscribers.Add(vm.eventBus.Subscribe<StdErrWriteEvent>(vm.HandleStdErr));
-        vm.stdinModule = msg.MipsMachine.StdIn;
+        vm.stdinModule = msg.Machine.StdIn;
         
         vm.TriggerTextUpdate();
     }

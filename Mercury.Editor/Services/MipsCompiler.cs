@@ -153,7 +153,6 @@ public partial class MipsCompiler : BaseService<MipsCompiler>, ICompilerService 
             }
 
             lock (results) {
-                Logger.LogDebug("llvm-mc compilation sucess for file {File}", file);
                 results.Add(new ProcessResult() {
                     Success = result == CompilationError.None,
                     OutputFilePath = result == CompilationError.None ? outputName : null,

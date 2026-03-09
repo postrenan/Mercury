@@ -26,7 +26,6 @@ public class SystemBehaviourTest {
                 .WithVolatileStorage()
                 .WithBlockCapacity(4)
                 .Build())
-            .WithInMemoryStdio()
             .WithMips()
             .WithMipsMonocycle()
             .WithAnonymousOs(e => {

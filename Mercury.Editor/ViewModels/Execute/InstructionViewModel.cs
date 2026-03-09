@@ -49,7 +49,7 @@ public sealed partial class InstructionViewModel : BaseViewModel<InstructionView
 
     private static void OnProgramLoad(InstructionViewModel recipient, ProgramLoadMessage msg) {
         ProgramMetadata meta = msg.Metadata;
-        recipient.machine = msg.MipsMachine;
+        recipient.machine = msg.Machine;
         recipient.StepCommand.NotifyCanExecuteChanged();
         recipient.ExecuteCommand.NotifyCanExecuteChanged();
         recipient.StopCommand.NotifyCanExecuteChanged();
@@ -60,8 +60,8 @@ public sealed partial class InstructionViewModel : BaseViewModel<InstructionView
         recipient.Instructions.Clear();
         for (int i = 0; i < meta.Files.Count; i++) {
             uint start = meta.Files[i].StartAddress;
-            uint end = i < meta.Files.Count-1 ? meta.Files[i + 1].StartAddress : msg.MipsMachine.CpuModule.ProgramEnd;
-            recipient.ProcessFile(meta, meta.Files[i], start, end, msg.MipsMachine.DataMemory, msg.Elf.EntryPoint, userLabels);
+            uint end = i < meta.Files.Count-1 ? meta.Files[i + 1].StartAddress : msg.Machine.CpuModule.ProgramEnd;
+            recipient.ProcessFile(meta, meta.Files[i], start, end, msg.Machine.MemoryModule, msg.Elf.EntryPoint, userLabels);
         }
         int index = recipient.Instructions.IndexOf(x => x.Address == msg.Elf.EntryPoint);
         recipient.SelectedInstructionIndex = index;
@@ -197,7 +197,7 @@ public sealed partial class InstructionViewModel : BaseViewModel<InstructionView
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ExecuteSpeedTooltip))]
     private float executionSpeed = 5; // 5 IPS
-    private MipsMachine? machine;
+    private Machine? machine;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(StopCommand))]

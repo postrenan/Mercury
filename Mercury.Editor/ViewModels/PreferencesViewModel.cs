@@ -30,7 +30,8 @@ public partial class PreferencesViewModel : BaseViewModel<PreferencesViewModel, 
 
     private readonly List<ThemeVariant> themeVariants = [];
     [ObservableProperty] private ObservableCollection<string> themeNames = [];
-    [ObservableProperty] private int selectedThemeIndex;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowLightModeWipMessage))] private int selectedThemeIndex;
+    public bool ShowLightModeWipMessage => ThemeNames.Count > SelectedThemeIndex && ThemeNames[SelectedThemeIndex] == "Light";
 
     [ObservableProperty] private string onlineCheck = string.Empty;
     private string? onlineCheckError; 

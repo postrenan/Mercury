@@ -102,7 +102,6 @@ break 0
                 .WithVolatileStorage()
                 .WithBlockCapacity(4)
                 .Build())
-            .WithInMemoryStdio()
             .WithMips()
             .WithMipsMonocycle()
             .WithAnonymousOs(e => {
@@ -187,7 +186,6 @@ break 0
                 .WithVolatileStorage()
                 .WithBlockCapacity(4)
                 .Build())
-            .WithInMemoryStdio()
             .WithMips()
             .WithMipsMonocycle()
             .WithAnonymousOs(e => {
@@ -258,7 +256,6 @@ break 0
                 .WithVolatileStorage()
                 .WithBlockCapacity(4)
                 .Build())
-            .WithInMemoryStdio()
             .WithMips()
             .WithMipsMonocycle()
             .WithAnonymousOs(e => {
@@ -414,7 +411,6 @@ break 0
                 .WithVolatileStorage()
                 .WithBlockCapacity(4)
                 .Build())
-            .WithInMemoryStdio()
             .WithMips()
             .WithMipsMonocycle()
             .WithAnonymousOs(e => {

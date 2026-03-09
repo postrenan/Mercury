@@ -3,12 +3,13 @@ using System.Linq;
 using ELFSharp.ELF;
 using Mercury.Editor.Extensions;
 using Mercury.Engine.Mips.Runtime;
+using Machine = Mercury.Engine.Common.Machine;
 
 namespace Mercury.Editor.Models.Messages;
 
 public class ProgramLoadMessage
 {
-    public required MipsMachine MipsMachine { get; init; }
+    public required Machine Machine { get; init; }
     
     public required ELF<uint> Elf { get; init; }
     public required ProgramMetadata Metadata { get; init; }

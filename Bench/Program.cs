@@ -17,7 +17,6 @@ using Memory memory = new MemoryBuilder()
     .Build();
 
 using MipsMachine machine = new MachineBuilder()
-    .WithStdio(null, stdoutChannel, null)
     .WithMemory(memory)
     .WithMips()
     .WithMipsMonocycle()

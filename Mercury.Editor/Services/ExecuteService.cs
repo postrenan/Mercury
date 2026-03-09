@@ -16,6 +16,7 @@ using Mercury.Engine.Mips.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Mercury.Editor.Extensions;
+using Machine = Mercury.Engine.Common.Machine;
 
 namespace Mercury.Editor.Services;
 
@@ -26,7 +27,7 @@ namespace Mercury.Editor.Services;
 public sealed class ExecuteService : BaseService<ExecuteService>, IDisposable {
     private readonly ICompilerService compilerService;
 
-    private MipsMachine? currentMachine;
+    private Machine? currentMachine;
     private ELF<uint>? currentElf;
 
     public ExecuteService([FromKeyedServices(Architecture.Mips)] ICompilerService compilerService) {
@@ -115,17 +116,12 @@ public sealed class ExecuteService : BaseService<ExecuteService>, IDisposable {
         // publica evento de carregamento do programa
         ProgramLoadMessage loadMsg = new()
         {
-            MipsMachine = currentMachine,
+            Machine = currentMachine,
             Elf = currentElf,
             Metadata = meta
         };
         Logger.LogInformation("Programa carregado com sucesso: {OutputPath}", result.OutputPath);
         WeakReferenceMessenger.Default.Send(loadMsg);
-    }
-
-    public MipsMachine GetCurrentMachine()
-    {
-        return currentMachine!;
     }
 
     public void Dispose()

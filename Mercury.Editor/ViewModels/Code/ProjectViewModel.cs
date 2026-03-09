@@ -282,6 +282,7 @@ public partial class ProjectViewModel : BaseViewModel<ProjectViewModel, ProjectV
             // coloca aqui soh pra garantir. vai que 
             Logger.LogWarning("Removed a root node from the project tree");
         }
+        fileService.InvalidateBinaries();
     }
 
     private bool CanRemoveNode(ProjectNode? node) {

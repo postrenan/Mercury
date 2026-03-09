@@ -30,6 +30,8 @@
                            Content="{loc:PreferencesResources Themes}"/>
                     <ComboBox x:Name="ThemeComboBox" ItemsSource="{Binding ThemeNames}"
                               SelectedIndex="{Binding SelectedThemeIndex}"/>
+                    <TextBlock Text="Light theme not fully supported." IsVisible="{Binding ShowLightModeWipMessage}"
+                               Foreground="Red" FontWeight="Bold"/>
                 </StackPanel>
                 
                 <!-- online check -->

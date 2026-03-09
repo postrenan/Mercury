@@ -389,4 +389,29 @@ public class FileService : BaseService<FileService> {
         }
         return node.IsOpen;
     }
+    
+    // TODO: isso deveria estar aqui? Nao parece certo coloca-lo no MipsCompiler :|
+    /// <summary>
+    /// Removes all files in the <see cref="ProjectFile.OutputPath"/> folder.
+    /// </summary>
+    public void InvalidateBinaries() {
+        ProjectFile? project = projectService.GetCurrentProject();
+        if (project is null) {
+            Logger.LogWarning("Tried to invalidate binaries with no project loaded!");
+            return;
+        }
+
+        PathObject binPath = project.ProjectDirectory + project.OutputPath;
+        foreach (PathObject entry in binPath) {
+            try {
+                entry.Delete();
+            }
+            catch (Exception e) {
+                Logger.LogError("Could not delete file {File}. Is it the previous binary that is still locked? " +
+                                "Error: {Error}", entry.ToString(), e.Message);
+            }
+        }
+
+        Logger.LogInformation("Binaries invalidated");
+    }
 }

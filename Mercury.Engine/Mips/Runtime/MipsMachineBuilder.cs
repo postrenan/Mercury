@@ -80,8 +80,6 @@ public class MipsMachineBuilder : MachineBuilder {
         MipsMachine mipsMachine = new() {
             EventBus = EventBus,
             Modules = Modules,
-            DataMemory = DataMemory,
-            Memory = InstructionMemory,
             Architecture = Architecture.Mips
         };
 
