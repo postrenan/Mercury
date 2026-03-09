@@ -5,37 +5,51 @@
 ## What is Mercury?
 
 Mercury is a flexible framework for instruction-accurate computer simulation.
-Uses C# as a Domain Specific Language(DSL). Enables description of any<sup>*</sup> ISA
-and organizes a computer into different modules, decreasing the amount of work needed
-to add execution support to a ISA.
+Uses C# as a Domain Specific Language(DSL) to define an architecture details and instructions. 
+Enables description of any<sup>*</sup> ISA and organizes a computer into different modules, decreasing the amount of 
+work needed to add execution support to a ISA. Also, it includes an adaptive GUI with an embedded IDE to coordinate 
+the compilation/loading/execution flow of programs.
 
-<sup>*</sup>Currently only 32 fixed width instructions are supported.
+<sup>*</sup>Currently only 32 fixed width instructions are supported. (i.e. MIPS, Arm(except Thumb), etc.)
 
 > [!NOTE]
 > This project is product of my graduation thesis. Available [here](https://repositorio.ufsm.br/bitstream/handle/1/37299/Appelt_Rodrigo_2025_TCC.pdf).
 
-## Engine
+## How Does It Work?
 
-The Engine is a collection of multiple simulators capable of simulating an 
-entire computer. Uses a modular and extensible architecture, allowing for easy
-implementation of new architectures and simulators. Also, currently supports any static
-ELF executable, allowing students to run real-world programs.
+Mercury is split in many different parts, each with its own set of responsabilities. In order of usage: 
+1. **ISA Definition:** uses C# as a DSL to embed metadata about registers and instructions in the source code
+2. **Specific Module Implementation:** for new ISAs, a CPU module is needed. This module defines the behaviour of each 
+instruction defined in the previous step.
+3. **Machine Modeling:** instantiation of modules that define which capabilities the final virtual computer will have.
+These modules communicate between themselves via a publish-subcribe event bus.
+4. **Execution Analysis:** using the GUI application, programs can be compiled/loaded and its execution analyzed in a 
+step-by-step manner with instruction side-effects clear.
 
-Architectures currently supported:
-* **MIPS:** the entire MIPS-I ISA is supported, with support for some instructions
-found in later revisions of the ISA.
-* **RISC-V:** not currently supported. Planned for future releases after support
-for MIPS is stable.
+## Modules
 
-## Editor
+There are a variety of pre-implemented modules that can be used:
+1. A MIPS-I CPU module with optional branch delay slot simulation.
+2. Optimized RAM module (complete 64-bit address), can save state to disk
+3. MIPS Syscall Provider: has most syscalls supported by MARS (and by extension SPIM)
 
-The Editor is an IDE that interfaces with the simulators provided by the Engine.
-It provides a user-friendly interface for students to write, compile, and run
-assembly code. Also has a integrated quick guide of basic concepts of computer
-architecture and assembly programming.
+## GUI Application
 
-TODO: add screenshots
+The GUI application (referred as Editor) is a cross-platform user-friendly interface that
+hosts an embedded IDE so the user can create its own programs in an immersive way. Also,
+it automates some processes, such as compilation, assembling, linking and loading. 
+In addition, it abstracts details from the underlying framework, selecting different modules 
+based on current project settings. Finally, it exposes a view for the user to execute 
+the programs it has created and analyze program behaviour.
+
+![Printscreen showing the coding interface of Mercury](docs/images/code-view.png)
+![Printscreen showing the execution interface of Mercury](docs/images/execute-view.png)
 
 ## Installation
 
-TODO: add installation instructions
+Access the [Releases page](https://github.com/Agentew04/Mercury/releases) and download
+the respective package:
+* **Windows:** download the file `MercurySetup_VERSION_Windows.exe` to install. Subsequent 
+updates are handled automatically by the application. 
+  * For Portable installations, download `Mercury-VERSION.rar` and extract it to the desired folder. 
+* **Linux:** download the file `MercurySetup_VERSION_Ubuntu.deb` to install
