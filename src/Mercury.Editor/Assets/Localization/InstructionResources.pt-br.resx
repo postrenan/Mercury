@@ -51,4 +51,7 @@
         <value>Este endereço é referenciado pelos seguintes rótulos: 
 {0}</value>
     </data>
+    <data name="OpenMonitorTooltip" xml:space="preserve">
+        <value>Abre a visualização do framebuffer da GPU</value>
+    </data>
 </root>

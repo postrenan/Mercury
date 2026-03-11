@@ -51,6 +51,12 @@
                     Maximum="20"
                     ToolTip.Tip="{Binding ExecuteSpeedTooltip}"/>
             
+            <Button Padding="5" ToolTip.Tip="{loc:InstructionResources OpenMonitorTooltip}"
+                    Command="{Binding OpenMonitorCommand}"
+                    IsVisible="{Binding ShowOpenMonitorButton}">
+                <TextBlock FontFamily="{StaticResource PhosphorFont}"
+                           Text="&#xE32E;" Margin="0"/>
+            </Button>
         </StackPanel>
 
         <DataGrid x:Name="InstructionDataGrid"

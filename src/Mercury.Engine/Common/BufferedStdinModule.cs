@@ -13,8 +13,8 @@ public class BufferedStdinModule : IModule {
         channel = Channel.CreateUnbounded<char>();
     }
     
-    public void SubscribeToEvents(EventBus eventBus) {
-        subscriptions.Add(eventBus.Subscribe<StdInReadEvent>(Handle));
+    public void SubscribeToEvents(EventBus bus) {
+        subscriptions.Add(bus.Subscribe<StdInReadEvent>(Handle));
     }
 
     public void UnsubscribeFromEvents() {

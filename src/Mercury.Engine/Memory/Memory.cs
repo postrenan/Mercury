@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using Mercury.Engine.Common;
 using Mercury.Engine.Common.Events;
+using Mercury.Engine.Memory.Events;
 
 namespace Mercury.Engine.Memory;
 
@@ -361,10 +362,10 @@ public sealed class Memory : IDisposable, IMemory, IModule
     private EventBus eventBus;
     private List<IDisposable> subscriptions = [];
 
-    public void SubscribeToEvents(EventBus eventBus) {
-        this.eventBus = eventBus;
-        subscriptions.Add(eventBus.Subscribe<ReadMemoryEvent>(HandleRead));
-        subscriptions.Add(eventBus.Subscribe<WriteMemoryEvent>(HandleWrite));
+    public void SubscribeToEvents(EventBus bus) {
+        this.eventBus = bus;
+        subscriptions.Add(bus.Subscribe<RamReadEvent>(HandleRead));
+        subscriptions.Add(bus.Subscribe<RamWriteEvent>(HandleWrite));
     }
 
     public void UnsubscribeFromEvents() {
@@ -374,11 +375,11 @@ public sealed class Memory : IDisposable, IMemory, IModule
         subscriptions.Clear();
     }
 
-    private void HandleRead(ReadMemoryEvent readMemoryEvent) {
-        Read(readMemoryEvent.Address, readMemoryEvent.Buffer.Span[..(int)readMemoryEvent.Size]);
+    private void HandleRead(RamReadEvent memoryReadEvent) {
+        Read(memoryReadEvent.Address, memoryReadEvent.Buffer.Span[..(int)memoryReadEvent.Size]);
     }
 
-    private void HandleWrite(WriteMemoryEvent writeMemoryEvent) {
-        Write(writeMemoryEvent.Address, writeMemoryEvent.Buffer.Span[..(int)writeMemoryEvent.Size]);
+    private void HandleWrite(RamWriteEvent memoryWriteEvent) {
+        Write(memoryWriteEvent.Address, memoryWriteEvent.Buffer.Span[..(int)memoryWriteEvent.Size]);
     }
 }

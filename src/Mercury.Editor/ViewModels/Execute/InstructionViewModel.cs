@@ -19,6 +19,10 @@ using Mercury.Engine.Mips.Instructions;
 using Mercury.Engine.Mips.Runtime;
 using Mercury.Editor.Extensions;
 using Mercury.Engine.Common;
+using Mercury.Engine.Modules.Gpu;
+using Mercury.Engine.Modules.Gpu.Events;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Mercury.Editor.ViewModels.Execute;
 
@@ -26,6 +30,9 @@ public sealed partial class InstructionViewModel : BaseViewModel<InstructionView
 
     [ObservableProperty] private ObservableCollection<DisassemblyRow> instructions = [];
     [ObservableProperty] private int selectedInstructionIndex = -1;
+
+    private EventBus eventBus = null!;
+    private List<IDisposable> subscriptions = [];
     
     public InstructionViewModel() {
         WeakReferenceMessenger.Default.Register<InstructionViewModel,ProgramLoadMessage>(this, OnProgramLoad);
@@ -40,20 +47,35 @@ public sealed partial class InstructionViewModel : BaseViewModel<InstructionView
         LocalizationManager.CultureChanged -= OnLocalize;
     }
 
-    public string ExecuteSpeedTooltip => string.Format(InstructionResources.ExecuteSpeedTooltipValue,
-        /* I/s  */ExecutionSpeed.ToString("F1"),
-        /* ms/I */(1000.0f/ExecutionSpeed).ToString("F1")
-    );
+    public string ExecuteSpeedTooltip {
+        get {
+            float speed = ExecutionSpeed;
+            if (Math.Abs(ExecutionSpeed - 20) < 0.1) {
+                speed = 1000;
+            }
+            return string.Format(InstructionResources.ExecuteSpeedTooltipValue,
+                /* I/s  */speed.ToString("F1"),
+                /* ms/I */(1000.0f / speed).ToString("F1")
+            );
+        }
+    }
 
     #region Loading
 
     private static void OnProgramLoad(InstructionViewModel recipient, ProgramLoadMessage msg) {
+
+        foreach (IDisposable sub in recipient.subscriptions) {
+            sub.Dispose();
+        }
+        recipient.subscriptions.Clear();
+        
         ProgramMetadata meta = msg.Metadata;
         recipient.machine = msg.Machine;
         recipient.StepCommand.NotifyCanExecuteChanged();
         recipient.ExecuteCommand.NotifyCanExecuteChanged();
         recipient.StopCommand.NotifyCanExecuteChanged();
         recipient.IsExecuting = false;
+        recipient.executionCts?.Cancel(); // stop executing last machine if it was
 
         List<Symbol> userLabels = meta.GetUserDefinedSymbols().ToList();
         
@@ -65,6 +87,17 @@ public sealed partial class InstructionViewModel : BaseViewModel<InstructionView
         }
         int index = recipient.Instructions.IndexOf(x => x.Address == msg.Elf.EntryPoint);
         recipient.SelectedInstructionIndex = index;
+
+        recipient.framebufferGpu = msg.Machine.GetModule<FramebufferGpu>();
+        recipient.ShowOpenMonitorButton = recipient.framebufferGpu is not null;
+        if (recipient.framebufferGpu is null) {
+            recipient.monitorWindow?.Hide();
+        }
+        recipient.monitorWindow?.Screen?.SubmitBuffer(0,0,ReadOnlyMemory<byte>.Empty);
+        recipient.subscriptions.Add(msg.Machine.EventBus.Subscribe<GpuWriteEvent>(recipient.OnGpuWrite));
+        if ((recipient.monitorWindow?.IsEffectivelyVisible ?? false) && recipient.framebufferGpu is not null) {
+            recipient.monitorWindow?.Screen?.SubmitBuffer(recipient.framebufferGpu.Width, recipient.framebufferGpu.Height, recipient.framebufferGpu.GetFramebufferReference());
+        }
     }
 
     private void ProcessFile(ProgramMetadata meta, ObjectFile file, uint startAddress, uint endAddress, 
@@ -251,12 +284,18 @@ public sealed partial class InstructionViewModel : BaseViewModel<InstructionView
     partial void OnExecutionSpeedChanged(float value) {
         float delay = 1000.0f / value;
         executionTimer?.Dispose();
-        executionTimer = new PeriodicTimer(TimeSpan.FromMilliseconds(delay));
+        if (Math.Abs(value - 20f) < 0.1) {
+            // execute without delays
+            executionTimer = new PeriodicTimer(TimeSpan.FromMilliseconds(1));
+        }
+        else {
+            executionTimer = new PeriodicTimer(TimeSpan.FromMilliseconds(delay));
+        }
     }
 
     private async Task ExecuteTask() {
         while (!(executionCts?.IsCancellationRequested ?? true)
-            && await executionTimer!.WaitForNextTickAsync()){
+            && await executionTimer!.WaitForNextTickAsync(executionCts.Token)){
             await Step();
             if (!IsExecutionFinished) continue;
             IsExecuting = false;
@@ -264,6 +303,40 @@ public sealed partial class InstructionViewModel : BaseViewModel<InstructionView
             break;
         }
     }
+
+    #endregion
+
+    #region Addons
+
+    #region GPU
+
+    [ObservableProperty] private bool showOpenMonitorButton;
+    private FramebufferGpu? framebufferGpu;
+    private MonitorWindow? monitorWindow;
+    
+    [RelayCommand]
+    private void OpenMonitor() {
+        if (framebufferGpu is null) {
+            Logger.LogWarning("Tried opening monitor window without a gpu module installed.");
+            return;
+        }
+        
+        if (monitorWindow?.IsEffectivelyVisible ?? false) {
+            monitorWindow!.Hide();
+            return;
+        }
+
+        monitorWindow ??= App.Services.GetRequiredService<MonitorWindow>();
+        monitorWindow.Screen.ContinuousUpdate = false;
+        monitorWindow.Screen.SubmitBuffer(framebufferGpu.Width, framebufferGpu.Height, framebufferGpu.GetFramebufferReference());
+        monitorWindow.Show();
+    }
+
+    private void OnGpuWrite(GpuWriteEvent e) {
+        monitorWindow?.Screen.Redraw();
+    }
+
+    #endregion
 
     #endregion
 }

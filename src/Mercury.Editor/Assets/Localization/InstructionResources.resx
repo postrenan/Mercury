@@ -58,4 +58,7 @@
         <value>This address is referenced by the following labels: 
 {0}</value>
     </data>
+    <data name="OpenMonitorTooltip" xml:space="preserve">
+        <value>Open the GPU's framebuffer visualization</value>
+    </data>
 </root>

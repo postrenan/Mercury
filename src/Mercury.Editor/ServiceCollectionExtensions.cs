@@ -7,6 +7,7 @@ using Mercury.Editor.ViewModels.Design;
 using Mercury.Editor.ViewModels.Execute;
 using Mercury.Editor.Views;
 using Mercury.Editor.Views.Design;
+using Mercury.Editor.Views.ExecuteView;
 using Mercury.Engine.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -31,6 +32,7 @@ public static class ServiceCollectionExtensions {
             .AddSingleton<CodeTabViewModel>()
             .AddSingleton<ExecuteViewModel>()
             .AddSingleton<DesignViewModel>()
+            .AddSingleton<MonitorViewModel>()
                 //transient
             .AddTransient<SplashScreenViewModel>()
             .AddTransient<ProjectConfigurationViewModel>()
@@ -46,6 +48,7 @@ public static class ServiceCollectionExtensions {
             .AddTransient<ProjectConfiguration>()
             .AddTransient<ProjectSelectionView>()
             .AddTransient<SplashScreen>()
+            .AddSingleton<MonitorWindow>()
             .AddTransient<EditNodeView>();
     }
 

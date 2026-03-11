@@ -74,8 +74,8 @@ public partial class RamViewModel : BaseViewModel<RamViewModel, RamView>, IDispo
         vm.subscriptions.Clear();
 
         vm.currentMachine = msg.Machine;
-        vm.subscriptions.Add(msg.Machine.EventBus.Subscribe<ReadMemoryEvent>(e => vm.MemoryAccessed(e.Address)));
-        vm.subscriptions.Add(msg.Machine.EventBus.Subscribe<WriteMemoryEvent>(e => vm.MemoryAccessed(e.Address)));
+        vm.subscriptions.Add(msg.Machine.EventBus.Subscribe<MemoryReadEvent>(e => vm.MemoryAccessed(e.Address)));
+        vm.subscriptions.Add(msg.Machine.EventBus.Subscribe<MemoryWriteEvent>(e => vm.MemoryAccessed(e.Address)));
         vm.SelectedSectionIndex = vm.Locations.IndexOf(x => x.Name == ".data");
         vm.PopulateRam();
         vm.DisplayRam();
@@ -222,6 +222,10 @@ public partial class RamViewModel : BaseViewModel<RamViewModel, RamView>, IDispo
         string Display(int data) {
             if (SelectedModeIndex == -1) {
                 SelectedModeIndex = 0;
+            }
+
+            if (AvailableVisualizationModes.Count == 0 || AvailableVisualizationModes.Count<SelectedModeIndex-1) {
+                return string.Empty;
             }
 
             switch (AvailableVisualizationModes[SelectedModeIndex]) {

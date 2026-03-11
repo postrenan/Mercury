@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Xml.Serialization;
 using Mercury.Editor.Extensions;
+using Mercury.Editor.Models.Modules;
 using Mercury.Engine.Common;
 
 namespace Mercury.Editor.Models;
@@ -121,6 +123,9 @@ public class ProjectFile {
     
     #endregion
 
+    [XmlElement("Modules")]
+    public List<ModuleDescription> InstalledModules { get; set; } = [];
+    
     /// <summary>
     /// Structure holding all custom visual settings that the user has for this project.
     /// </summary>

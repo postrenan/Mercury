@@ -16,14 +16,14 @@ public abstract class MipsSyscallModule : ISyscallModule {
     protected EventStream stdout = null!;
     protected EventStream stderr = null!;
     
-    public void SubscribeToEvents(EventBus eventBus) {
-        this.eventBus = eventBus;
-        subscriptions.Add(eventBus.Subscribe<OnSyscallEvent>(async e => await OnSyscallReceive(e)));
+    public void SubscribeToEvents(EventBus bus) {
+        this.eventBus = bus;
+        subscriptions.Add(bus.Subscribe<OnSyscallEvent>(async e => await OnSyscallReceive(e)));
 
         stdin = new EventStream(async (_) => {
             Memory<char> buffer = new char[1].AsMemory();
             int read = 0;
-            await eventBus.PublishAsync(new StdInReadEvent() {
+            await bus.PublishAsync(new StdInReadEvent() {
                 Buffer = buffer,
                 Delimiter = '\n',
                 OnReadComplete = r => read = r
@@ -33,14 +33,14 @@ public abstract class MipsSyscallModule : ISyscallModule {
         stdout = new EventStream(null, (buffer,_) => {
             Memory<char> buffer2 = new char[buffer.Length];
             buffer.CopyTo(buffer2.Span);
-            return eventBus.PublishAsync(new StdOutWriteEvent {
+            return bus.PublishAsync(new StdOutWriteEvent {
                 Data = buffer2
             });
         });
         stderr = new EventStream(null, (buffer,_) => {
             Memory<char> buffer2 = new char[buffer.Length];
             buffer.CopyTo(buffer2.Span);
-            return eventBus.PublishAsync(new StdErrWriteEvent {
+            return bus.PublishAsync(new StdErrWriteEvent {
                 Data = buffer2
             });
         });

@@ -5,6 +5,6 @@
 /// </summary>
 public interface IModule {
     
-    public void SubscribeToEvents(EventBus eventBus);
+    public void SubscribeToEvents(EventBus bus);
     public void UnsubscribeFromEvents();
 }

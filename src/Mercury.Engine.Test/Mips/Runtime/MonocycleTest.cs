@@ -67,13 +67,12 @@ public class MonocycleTest {
             .WithMarsOs()
             .Build();
         
-        Assert.IsNotNull(mipsMachine.DataMemory);
         Assert.IsNotNull(mipsMachine.MemoryModule);
         Assert.IsNotNull(mipsMachine.CpuModule);
         Assert.IsNotNull(mipsMachine.SyscallModule);
         
         const ulong gb = 1024 * 1024 * 1024;
-        Assert.AreEqual(4 * gb, (mipsMachine.DataMemory as Engine.Memory.Memory)!.Size);
+        Assert.AreEqual(4 * gb, (mipsMachine.MemoryModule as Engine.Memory.Memory)!.Size);
         Assert.IsInstanceOfType<Monocycle>(mipsMachine.CpuModule);
         Assert.IsInstanceOfType<Mars>(mipsMachine.SyscallModule);
     }

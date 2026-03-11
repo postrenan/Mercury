@@ -1,7 +1,10 @@
 ﻿using Mercury.Engine.Common;
 using Mercury.Engine.Common.Builders;
+using Mercury.Engine.Memory;
 using Mercury.Engine.Mips.Runtime.OS;
 using Mercury.Engine.Mips.Runtime.Simple;
+using Mercury.Engine.Modules.Gpu;
+using Mercury.Engine.Modules.Gpu.Events;
 
 namespace Mercury.Engine.Mips.Runtime;
 
@@ -55,14 +58,16 @@ public class MipsMachineBuilder : MachineBuilder {
         osType = OsType.BareMetal;
         return this;
     }
+
+    public MipsMachineBuilder WithGpu(FramebufferGpu gpu) {
+        Modules.Add(gpu);
+        AddressDecoderModule.MapWriteOnlyDevice<GpuWriteEvent,FramebufferGpu>(new MemoryRange(gpu.FramebufferAddress, gpu.FramebufferSize));
+        return this;
+    }
     
     public override MipsMachine Build() {
-        if (DataMemory is null) {
+        if (Memory is null) {
             throw new InvalidOperationException("Data Memory must be set.");
-        }
-
-        if (InstructionMemory is null) {
-            throw new InvalidOperationException("Instruction Memory must be set.");
         }
 
         if (cpu is null) {
@@ -76,6 +81,8 @@ public class MipsMachineBuilder : MachineBuilder {
         foreach (IModule module in Modules) {
             module.SubscribeToEvents(EventBus);
         }
+        
+        AddressDecoderModule.BuildMappings();
 
         MipsMachine mipsMachine = new() {
             EventBus = EventBus,

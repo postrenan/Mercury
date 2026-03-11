@@ -16,6 +16,9 @@ using Mercury.Engine.Mips.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Mercury.Editor.Extensions;
+using Mercury.Editor.Models;
+using Mercury.Editor.Models.Modules;
+using Mercury.Engine.Modules.Gpu;
 using Machine = Mercury.Engine.Common.Machine;
 
 namespace Mercury.Editor.Services;
@@ -26,21 +29,30 @@ namespace Mercury.Editor.Services;
 /// </summary>
 public sealed class ExecuteService : BaseService<ExecuteService>, IDisposable {
     private readonly ICompilerService compilerService;
+    private readonly ProjectService projectService;
 
     private Machine? currentMachine;
     private ELF<uint>? currentElf;
 
-    public ExecuteService([FromKeyedServices(Architecture.Mips)] ICompilerService compilerService) {
+    public ExecuteService([FromKeyedServices(Architecture.Mips)] ICompilerService compilerService,
+        ProjectService projectService) {
         this.compilerService = compilerService;
+        this.projectService = projectService;
     }
 
     public void LoadProgram() {
         CompilationResult result = compilerService.LastCompilationResult;
+        ProjectFile? project = projectService.GetCurrentProject();
 
         if (result.Id == Guid.Empty 
-            || !result.IsSuccess 
-            || (result.Diagnostics?.Exists(x => x.Type == DiagnosticType.Error) ?? false))
-        {
+            || !result.IsSuccess
+            || (result.Diagnostics?.Exists(x => x.Type == DiagnosticType.Error) ?? false)) {
+            Logger.LogInformation("Skipping machine assemblage because there was an error in compilation");
+            return;
+        }
+
+        if (project is null) {
+            Logger.LogError("Tried creating a machine without a loaded project! Skipping");
             return;
         }
 
@@ -61,13 +73,20 @@ public sealed class ExecuteService : BaseService<ExecuteService>, IDisposable {
                 : Engine.Memory.Endianess.LittleEndian);
 
         // criar maquina
-        currentMachine = new MachineBuilder()
+        MipsMachineBuilder builder = new MachineBuilder()
             .WithMemory(memoryBuilder
                 .Build())
             .WithMips()
             .WithMarsOs()
-            .WithMipsMonocycle()
-            .Build();
+            .WithMipsMonocycle();
+
+        GpuModuleDescription? gpuDescription = (GpuModuleDescription?)project.InstalledModules.FirstOrDefault(x => x is GpuModuleDescription);
+        // if (gpuDescription is not null) {
+            // builder.WithGpu(new FramebufferGpu(gpuDescription.BaseAddress, gpuDescription.Width, gpuDescription.Height));
+        // }
+        builder.WithGpu(new FramebufferGpu(0x80000000, 100, 100));
+        
+        currentMachine = builder.Build();
 
         currentMachine.LoadElf(currentElf);
         

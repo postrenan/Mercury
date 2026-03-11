@@ -6,6 +6,7 @@ using Mercury.Engine.Common.Events;
 using Mercury.Engine.Memory;
 using Mercury.Engine.Mips.Runtime;
 using Mercury.Engine.Mips.Runtime.Simple;
+using Mercury.Engine.Modules.Gpu;
 
 namespace Mercury.Engine.Common;
 
@@ -56,6 +57,8 @@ public abstract class Machine : IAsyncClockable, IDisposable {
             return field ?? throw new NullReferenceException("No BufferedStdinModule found");
         }
     }
+
+    public T? GetModule<T>() where T : IModule => Modules.OfType<T>().FirstOrDefault();
 
     /// <summary>
     /// The current architecture of this machine.
@@ -132,6 +135,10 @@ public abstract class Machine : IAsyncClockable, IDisposable {
         foreach (IModule module in Modules) {
             module.UnsubscribeFromEvents();
             if (module is IDisposable disposable) {
+                // dispose on some modules just call UnsubscribeFromEvents()
+                // but, theres minimal overhead in ensuring everything
+                // is properly disposed on modules that require special
+                // procedures.
                 disposable.Dispose();
             }
         }

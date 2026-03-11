@@ -324,7 +324,7 @@ public sealed class Mars : MipsSyscallModule {
         for (int i = read; i < n; i++) {
             bufferBytes.Span[i] = 0;
         }
-        eventBus.Publish(new WriteMemoryEvent() {
+        eventBus.Publish(new MemoryWriteEvent() {
             Buffer = bufferBytes,
             Size = (ulong)n,
             Address = address
@@ -565,7 +565,7 @@ public sealed class Mars : MipsSyscallModule {
             return;
         }
         Memory<byte> buffer = new byte[n];
-        eventBus.Publish(new ReadMemoryEvent() {
+        eventBus.Publish(new MemoryReadEvent() {
             Address = address,
             Buffer = buffer,
             Size = n
@@ -713,7 +713,7 @@ public sealed class Mars : MipsSyscallModule {
     private readonly Memory<char> inputBuffer = new char[64];
     
     private byte ReadByte(ulong address) {
-        eventBus.Publish(new ReadMemoryEvent() {
+        eventBus.Publish(new MemoryReadEvent() {
             Address = address,
             Buffer = wordBuffer,
             Size = 1
@@ -723,7 +723,7 @@ public sealed class Mars : MipsSyscallModule {
 
     private void WriteByte(ulong address, byte value) {
         wordBuffer.Span[0] = value;
-        eventBus.Publish(new WriteMemoryEvent() {
+        eventBus.Publish(new MemoryWriteEvent() {
             Address = address,
             Buffer = wordBuffer,
             Size = 1

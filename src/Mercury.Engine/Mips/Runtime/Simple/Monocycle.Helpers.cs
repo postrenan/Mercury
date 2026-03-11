@@ -22,7 +22,7 @@ public partial class Monocycle {
     }
     
     private void ReadMemory(ulong address, Memory<byte> buffer) {
-        ReadMemoryEvent read = new() {
+        MemoryReadEvent read = new() {
             Address = address,
             Buffer = buffer,
             Size = (ulong)buffer.Length
@@ -31,7 +31,7 @@ public partial class Monocycle {
     }
     
     private void WriteMemory(ulong address, Memory<byte> buffer) {
-        WriteMemoryEvent write = new() {
+        MemoryWriteEvent write = new() {
             Address = address,
             Buffer = buffer,
             Size = (ulong)buffer.Length

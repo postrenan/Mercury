@@ -20,6 +20,7 @@
     
     <!-- supress lack of parameterless ctor in Views -->
     <NoWarn>AVLN3001</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">

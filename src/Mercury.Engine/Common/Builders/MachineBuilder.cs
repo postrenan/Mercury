@@ -12,8 +12,8 @@ public class MachineBuilder : IBuilder<Machine> {
     protected EventBus EventBus { get; init; }
     protected BufferedStdinModule StdinModule { get; init; }
     protected List<IModule> Modules { get; init; } = [];
-    protected IMemory? DataMemory { get; private set; }
-    protected IMemory? InstructionMemory { get; private set; }
+    protected IMemory? Memory { get; private set; }
+    protected AddressDecoderModule AddressDecoderModule { get; init; }
 
 
     public MachineBuilder() {
@@ -21,19 +21,20 @@ public class MachineBuilder : IBuilder<Machine> {
         EventBus = new EventBus();
         StdinModule = new BufferedStdinModule();
         Modules.Add(StdinModule);
+        AddressDecoderModule = new AddressDecoderModule();
+        Modules.Add(AddressDecoderModule);
     }
 
     protected MachineBuilder(MachineBuilder m) {
-        DataMemory = m.DataMemory;
-        InstructionMemory = m.InstructionMemory;
+        Memory = m.Memory;
         EventBus = m.EventBus;
         Modules = m.Modules;
         StdinModule = m.StdinModule;
+        AddressDecoderModule = m.AddressDecoderModule;
     }
 
     public MachineBuilder WithMemory(IMemory memory) {
-        DataMemory = memory;
-        InstructionMemory = memory;
+        Memory = memory;
         Modules.Add((IModule)memory);
         return this;
     }

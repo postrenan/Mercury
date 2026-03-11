@@ -98,19 +98,19 @@ public partial class Monocycle {
                 break;
             }
             case Lb lb: {
-                ulong address = (ulong)(Registers.Get<MipsGprRegisters>(lb.Base) + lb.Offset);
+                ulong address = (ulong)((uint)Registers.Get<MipsGprRegisters>(lb.Base) + lb.Offset);
                 ReadMemory(address, memoryBuffer[..1]);
                 Registers.Set<MipsGprRegisters>(lb.Rt, (sbyte)memoryBuffer.Span[0]);
                 break;
             }
             case Lbu lbu: {
-                ulong address = (ulong)(Registers.Get<MipsGprRegisters>(lbu.Base) + lbu.Offset);
+                ulong address = (ulong)((uint)Registers.Get<MipsGprRegisters>(lbu.Base) + lbu.Offset);
                 ReadMemory(address, memoryBuffer[..1]);
                 Registers.Set<MipsGprRegisters>(lbu.Rt, memoryBuffer.Span[0]);
                 break;
             }
             case Lh lh: {
-                ulong address = (ulong)(Registers.Get<MipsGprRegisters>(lh.Base) + lh.Offset);
+                ulong address = (ulong)((uint)Registers.Get<MipsGprRegisters>(lh.Base) + lh.Offset);
                 if (address % 2 != 0) {
                     eventBus.Publish(new UnalignedMemoryAccessEvent {
                         InstructionWord = lh.ConvertToInt(),
@@ -126,7 +126,7 @@ public partial class Monocycle {
                 break;
             }
             case Lhu lhu: {
-                ulong address = (ulong)(Registers.Get<MipsGprRegisters>(lhu.Base) + lhu.Offset);
+                ulong address = (ulong)((uint)Registers.Get<MipsGprRegisters>(lhu.Base) + lhu.Offset);
                 if (address % 2 != 0) {
                     eventBus.Publish(new UnalignedMemoryAccessEvent {
                         InstructionWord = lhu.ConvertToInt(),
@@ -146,7 +146,7 @@ public partial class Monocycle {
                 break;
             }
             case Lw lw: {
-                ulong address = (ulong)(Registers.Get<MipsGprRegisters>(lw.Base) + lw.Offset);
+                ulong address = (ulong)((uint)Registers.Get<MipsGprRegisters>(lw.Base) + lw.Offset);
                 if((address & 0b11) != 0) {
                     eventBus.Publish(new UnalignedMemoryAccessEvent {
                         InstructionWord =  lw.ConvertToInt(),
@@ -162,14 +162,14 @@ public partial class Monocycle {
                 break;
             }
             case Sb sb: {
-                ulong address = (ulong)(Registers.Get<MipsGprRegisters>(sb.Base) + sb.Offset);
+                ulong address = (ulong)((uint)Registers.Get<MipsGprRegisters>(sb.Base) + sb.Offset);
                 byte value = (byte)(Registers.Get<MipsGprRegisters>(sb.Rt) & 0xFF);
                 memoryBuffer.Span[0] = value;
                 WriteMemory(address, memoryBuffer[..1]);
                 break;
             }
             case Sh sh: {
-                ulong address = (ulong)(Registers.Get<MipsGprRegisters>(sh.Base) + sh.Offset);
+                ulong address = (ulong)((uint)Registers.Get<MipsGprRegisters>(sh.Base) + sh.Offset);
                 if((address & 0b1) != 0) {
                     eventBus.Publish(new UnalignedMemoryAccessEvent {
                         InstructionWord = sh.ConvertToInt(),
@@ -186,7 +186,7 @@ public partial class Monocycle {
                 break;
             }
             case Sw sw: {
-                ulong address = (ulong)(Registers.Get<MipsGprRegisters>(sw.Base) + sw.Offset);
+                ulong address = (ulong)((uint)Registers.Get<MipsGprRegisters>(sw.Base) + sw.Offset);
                 if ((address & 0b11) != 0) {
                     eventBus.Publish(new UnalignedMemoryAccessEvent {
                         InstructionWord = sw.ConvertToInt(),
@@ -212,7 +212,7 @@ public partial class Monocycle {
                 break;
             }
             case Lwcz lwcz: {
-                ulong address = (ulong)(Registers.Get<MipsGprRegisters>(lwcz.Base) + lwcz.Offset);
+                ulong address = (ulong)((uint)Registers.Get<MipsGprRegisters>(lwcz.Base) + lwcz.Offset);
                 ReadMemory(address, memoryBuffer);
                 int value = BytesToInt32(memoryBuffer.Span);
                 if (lwcz.Coprocessor == 0) { // syscontrol

@@ -47,10 +47,10 @@ public sealed partial class Monocycle : ICpuModule, IDisposable {
     private readonly List<IDisposable> subscriptions = [];
     private readonly Endianess endianess = Endianess.BigEndian;
     
-    public void SubscribeToEvents(EventBus eventBus) {
-        this.eventBus = eventBus;
-        subscriptions.Add(eventBus.Subscribe<ClockEvent>(async _ => await ClockAsync()));
-        subscriptions.Add(eventBus.Subscribe<HaltEvent>(e => Halt(e.ExitCode, publish: false)));
+    public void SubscribeToEvents(EventBus bus) {
+        this.eventBus = bus;
+        subscriptions.Add(bus.Subscribe<ClockEvent>(async _ => await ClockAsync()));
+        subscriptions.Add(bus.Subscribe<HaltEvent>(e => Halt(e.ExitCode, publish: false)));
     }
 
     public void UnsubscribeFromEvents() {
