@@ -4,6 +4,7 @@ using Mercury.Engine.Common;
 using Mercury.Engine.Common.Events;
 using Mercury.Engine.Memory;
 using Mercury.Engine.Mips.Instructions;
+using Mercury.Engine.Mips.Runtime;
 using Mercury.Engine.Mips.Runtime.Events;
 
 namespace Mercury.Engine.Mips.Runtime.Simple;
@@ -16,9 +17,9 @@ public sealed partial class Monocycle : ICpuModule, IDisposable {
     
     public Monocycle() {
         Registers.DefineGroup<MipsGprRegisters,MipsRegisterHelper>();
-        Registers.DefineGroup<MipsFpuRegisters,MipsRegisterHelper>();
-        Registers.DefineGroup<MipsFpuControlRegisters,MipsRegisterHelper>();
         Registers.DefineGroup<MipsSpecialRegisters,MipsRegisterHelper>();
+
+        Fpu = new MipsFpu(Registers, BranchTo);
 
         Registers.Set(MipsGprRegisters.Sp, 0x7FFF_EFFC);
         Registers.Set(MipsGprRegisters.Fp, 0x0000_0000);
@@ -33,7 +34,12 @@ public sealed partial class Monocycle : ICpuModule, IDisposable {
     /// registers of the CPU.
     /// </summary>
     public RegisterCollection Registers { get; } = new(new MipsRegisterHelper());
-    public bool[] Flags { get; } = new bool[8];
+
+    /// <summary>
+    /// The floating-point coprocessor (CP1). Shares <see cref="Registers"/> with the CPU.
+    /// </summary>
+    public MipsFpu Fpu { get; }
+
     public bool UseBranchDelaySlot { get; set; }
     public uint ProgramEnd { get; set; }
 
@@ -125,8 +131,6 @@ public sealed partial class Monocycle : ICpuModule, IDisposable {
     }
     
     public event Func<SignalExceptionEventArgs, Task>? SignalException;
-
-    public event Action? OnFlagUpdate; // hackzinho. substituir quando usar sistema de mensagens
 
     public bool IsClockingFinished() {
         return Registers.Get(MipsGprRegisters.Pc) >= ProgramEnd

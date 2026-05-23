@@ -62,7 +62,7 @@ public partial class RegisterViewModel : BaseViewModel<RegisterViewModel, Regist
         vm.ProcessorFlags.Clear();
         if (vm.machine.CpuModule is Monocycle mono) {
             vm.OnFlagUpdate();
-            mono.OnFlagUpdate += vm.OnFlagUpdate;
+            mono.Fpu.OnFlagUpdate += vm.OnFlagUpdate;
         }
         // vm.Logger.LogInformation("Initialized register view with {registers} and {processors}", 
         //     vm.Registers.Count, 
@@ -131,7 +131,7 @@ public partial class RegisterViewModel : BaseViewModel<RegisterViewModel, Regist
             return;
         } 
         HasFlags = true;
-        ProcessorFlags.AddRange(mono.Flags);
+        ProcessorFlags.AddRange(mono.Fpu.Flags);
         OnPropertyChanged(nameof(HasFlags));
     }
     

@@ -17,8 +17,10 @@ public class MipsMachineBuilder : MachineBuilder {
     }
 
     public MipsMachineBuilder WithMipsMonocycle() {
-        cpu = new Monocycle();
-        Modules.Add(new Monocycle());
+        var mono = new Monocycle();
+        cpu = mono;
+        Modules.Add(mono);
+        Modules.Add(mono.Fpu);
         return this;
     }
 
